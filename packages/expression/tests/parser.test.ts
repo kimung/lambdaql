@@ -117,4 +117,45 @@ describe('Parser — LambdaExpression', () => {
     const m = ast.body as any
     expect(m.method).toBe('toLowerCase')
   })
+
+  // Non-régression : un opérateur de faible précédence (?? || && ?:) dans une valeur
+  // d'objet/tableau/argument doit être englobé, pas tronqué à la virgule.
+  it('parse un ?? dans une valeur d\'objet', () => {
+    const ast = parse('u => ({ name: u.name ?? "anon", age: u.age })')
+    const obj = ast.body as any
+    expect(obj.kind).toBe('ObjectLiteralExpression')
+    expect(obj.fields).toHaveLength(2)
+    expect(obj.fields[0].assignment.kind).toBe('BinaryExpression')
+    expect(obj.fields[0].assignment.operator).toBe('??')
+  })
+
+  it('parse un || dans une valeur d\'objet', () => {
+    const ast = parse('u => ({ ok: u.a || u.b, n: u.n })')
+    const obj = ast.body as any
+    expect(obj.fields).toHaveLength(2)
+    expect(obj.fields[0].assignment.operator).toBe('||')
+  })
+
+  it('parse un ternaire dans une valeur d\'objet', () => {
+    const ast = parse('u => ({ label: u.age >= 18 ? "adult" : "minor", id: u.id })')
+    const obj = ast.body as any
+    expect(obj.fields).toHaveLength(2)
+    expect(obj.fields[0].assignment.kind).toBe('ConditionalExpression')
+  })
+
+  it('parse un || dans un élément de tableau', () => {
+    const ast = parse('u => [u.a || u.b, u.c]')
+    const arr = ast.body as any
+    expect(arr.kind).toBe('ArrayLiteralExpression')
+    expect(arr.elements).toHaveLength(2)
+    expect(arr.elements[0].operator).toBe('||')
+  })
+
+  it('parse un ?? dans un argument de méthode', () => {
+    const ast = parse('u => u.name.replace(u.a ?? "x", u.b)')
+    const m = ast.body as any
+    expect(m.kind).toBe('MethodExpression')
+    expect(m.args).toHaveLength(2)
+    expect(m.args[0].operator).toBe('??')
+  })
 })

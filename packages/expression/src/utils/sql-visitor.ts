@@ -37,6 +37,9 @@ class SqlVisitor implements ExpressionVisitor<string> {
   }
 
   visitBinary(expr: BinaryExpression): string {
+    // '??' est produit comme BinaryExpression par le parser → COALESCE
+    if (expr.operator === '??')
+      return `COALESCE(${visit(expr.left, this)}, ${visit(expr.right, this)})`
     const op = SQL_OPS[expr.operator] ?? expr.operator
     return `(${visit(expr.left, this)} ${op} ${visit(expr.right, this)})`
   }

@@ -4,6 +4,7 @@ import type { Expression }      from '../expression/index.js'
 import type { Token }           from '../../token/index.js'
 import { ArrayLiteralExpression } from '../expression/array.js'
 import { TokenType }            from '../../token/type.js'
+import { SEPARATOR_PRECEDENCE } from './separator.js'
 
 export class ArrayParselet implements PrefixParselet {
   readonly type = 'prefix' as const
@@ -11,7 +12,7 @@ export class ArrayParselet implements PrefixParselet {
   parse(parser: Parser, _token: Token): Expression {
     const elements: Expression[] = []
     while (parser.peek(1)?.key !== TokenType.RIGHT_BRACKET) {
-      elements.push(parser.expression(40))
+      elements.push(parser.expression(SEPARATOR_PRECEDENCE))
       if (parser.peek(1)?.key === TokenType.COMMA) parser.advance()
     }
     parser.advance() // consume ']'

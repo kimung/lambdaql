@@ -5,6 +5,7 @@ import type { Token } from '../../token/index.js'
 import { PropertyExpression } from '../expression/property.js'
 import { MethodExpression } from '../expression/method.js'
 import { TokenType } from '../../token/type.js'
+import { SEPARATOR_PRECEDENCE } from './separator.js'
 
 export class CallParselet implements InfixParselet {
   readonly type = 'infix' as const
@@ -18,10 +19,10 @@ export class CallParselet implements InfixParselet {
       return new PropertyExpression(left, nameTok.value as string)
     parser.advance() // consume '('
     const args: Expression[] = []
-    // Use precedence 40 (= separator) to prevent SeparatorParselet from swallowing commas
-    // between consecutive arguments before the CallParselet can collect them individually.
+    // Seuil = précédence de la virgule : chaque argument englobe tout opérateur mais
+    // s'arrête à la virgule, que la boucle consomme ensuite individuellement.
     while (parser.peek(1)?.key !== TokenType.RIGHT_PAREN) {
-      args.push(parser.expression(40))
+      args.push(parser.expression(SEPARATOR_PRECEDENCE))
       if (parser.peek(1)?.key === TokenType.COMMA) parser.advance()
     }
     parser.advance() // consume ')'
