@@ -1,4 +1,4 @@
-import { expression, ConstantExpression, FieldExpression } from '@gamn9/expression'
+import { expression, ConstantExpression, FieldExpression, type LambdaExpression } from '@gamn9/expression'
 import { SourceExpression }                                  from './expression/source.js'
 import { SelectExpression, JoinExpression, OrderExpression } from './expression/select.js'
 import { UnionExpression }                                    from './expression/union.js'
@@ -6,6 +6,13 @@ import { InsertExpression }                                   from './expression
 import { UpdateExpression }                                   from './expression/update.js'
 import { DeleteExpression }                                   from './expression/delete.js'
 import { SqlTranslator, type SqlResult }                      from './sql/translator.js'
+
+type Fn<T> = (x: T, ...rest: any[]) => unknown
+type FnOrExpr<T> = Fn<T> | LambdaExpression
+
+function resolve<T>(v: FnOrExpr<T>): LambdaExpression {
+  return typeof v === 'function' ? expression.lambda.parse(v as Fn<unknown>) : v
+}
 
 export function from<T>(table: string): Queryable<T> {
   return new Queryable<T>(new SelectExpression(new SourceExpression(table)))
@@ -23,56 +30,42 @@ export class Queryable<T> {
     return this._expr as SelectExpression
   }
 
-  filter(predicate: (x: T, ...rest: any[]) => boolean): Queryable<T> {
+  filter(predicate: FnOrExpr<T>): Queryable<T> {
     const s = this._select
-    return new Queryable(s.patch({
-      where: [...s.where, expression.lambda.parse(predicate)],
-    }))
+    return new Queryable(s.patch({ where: [...s.where, resolve(predicate)] }))
   }
 
-  select<U>(selector: (x: T) => U): Queryable<U> {
-    return new Queryable<U>(this._select.patch({
-      selector: expression.lambda.parse(selector),
-    }))
+  select<U>(selector: FnOrExpr<T>): Queryable<U> {
+    return new Queryable<U>(this._select.patch({ selector: resolve(selector) }))
   }
 
-  join<U, R = T & U>(other: Queryable<U>, on: (x: T, y: U) => boolean): Queryable<R> {
-    const s    = this._select
-    const join = new JoinExpression(other._select.source, expression.lambda.parse(on), 'INNER')
-    return new Queryable<R>(s.patch({ joins: [...s.joins, join] }))
-  }
-
-  leftJoin<U, R = T & Partial<U>>(other: Queryable<U>, on: (x: T, y: U) => boolean): Queryable<R> {
-    const s    = this._select
-    const join = new JoinExpression(other._select.source, expression.lambda.parse(on), 'LEFT')
-    return new Queryable<R>(s.patch({ joins: [...s.joins, join] }))
-  }
-
-  groupBy(selector: (x: T) => unknown): Queryable<T> {
+  join<U, R = T & U>(other: Queryable<U>, on: FnOrExpr<T>): Queryable<R> {
     const s = this._select
-    return new Queryable(s.patch({
-      groups: [...s.groups, expression.lambda.parse(selector)],
-    }))
+    return new Queryable<R>(s.patch({ joins: [...s.joins, new JoinExpression(other._select.source, resolve(on), 'INNER')] }))
   }
 
-  having(predicate: (x: T) => boolean): Queryable<T> {
-    return new Queryable(this._select.patch({
-      having: expression.lambda.parse(predicate),
-    }))
-  }
-
-  orderBy(selector: (x: T) => unknown): Queryable<T> {
+  leftJoin<U, R = T & Partial<U>>(other: Queryable<U>, on: FnOrExpr<T>): Queryable<R> {
     const s = this._select
-    return new Queryable(s.patch({
-      orders: [...s.orders, new OrderExpression(expression.lambda.parse(selector), 'ASC')],
-    }))
+    return new Queryable<R>(s.patch({ joins: [...s.joins, new JoinExpression(other._select.source, resolve(on), 'LEFT')] }))
   }
 
-  orderByDesc(selector: (x: T) => unknown): Queryable<T> {
+  groupBy(selector: FnOrExpr<T>): Queryable<T> {
     const s = this._select
-    return new Queryable(s.patch({
-      orders: [...s.orders, new OrderExpression(expression.lambda.parse(selector), 'DESC')],
-    }))
+    return new Queryable(s.patch({ groups: [...s.groups, resolve(selector)] }))
+  }
+
+  having(predicate: FnOrExpr<T>): Queryable<T> {
+    return new Queryable(this._select.patch({ having: resolve(predicate) }))
+  }
+
+  orderBy(selector: FnOrExpr<T>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ orders: [...s.orders, new OrderExpression(resolve(selector), 'ASC')] }))
+  }
+
+  orderByDesc(selector: FnOrExpr<T>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ orders: [...s.orders, new OrderExpression(resolve(selector), 'DESC')] }))
   }
 
   take(n: number): Queryable<T> {

@@ -1,0 +1,24 @@
+{
+  "name": "@gamn9/compiler",
+  "version": "1.0.0",
+  "description": "TypeScript Custom Transformer — compiles @gamn9 lambdas to AST at build time",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+  },
+  "scripts": {
+    "build":     "tsc",
+    "test":      "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript":  "^5.7.0",
+    "vitest":      "^2.1.0"
+  }
+}
