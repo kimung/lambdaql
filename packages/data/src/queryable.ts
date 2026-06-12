@@ -1,6 +1,8 @@
 import { expression, ConstantExpression, FieldExpression, type LambdaExpression } from '@gamn9/expression'
+import { type NamingStrategy } from './naming.js'
 import { SourceExpression }                                  from './expression/source.js'
 import { SelectExpression, JoinExpression, OrderExpression } from './expression/select.js'
+import { SubqueryCondition }                                  from './expression/subquery.js'
 import { UnionExpression }                                    from './expression/union.js'
 import { InsertExpression }                                   from './expression/insert.js'
 import { UpdateExpression }                                   from './expression/update.js'
@@ -80,6 +82,26 @@ export class Queryable<T> {
     return new Queryable(this._select.patch({ isDistinct: true }))
   }
 
+  whereIn(selector: FnOrExpr<T>, inner: Queryable<any>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ subqueries: [...s.subqueries, new SubqueryCondition('IN', resolve(selector), inner._expr)] }))
+  }
+
+  whereNotIn(selector: FnOrExpr<T>, inner: Queryable<any>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ subqueries: [...s.subqueries, new SubqueryCondition('NOT IN', resolve(selector), inner._expr)] }))
+  }
+
+  whereExists(inner: Queryable<any>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ subqueries: [...s.subqueries, new SubqueryCondition('EXISTS', undefined, inner._expr)] }))
+  }
+
+  whereNotExists(inner: Queryable<any>): Queryable<T> {
+    const s = this._select
+    return new Queryable(s.patch({ subqueries: [...s.subqueries, new SubqueryCondition('NOT EXISTS', undefined, inner._expr)] }))
+  }
+
   union<U = T>(other: Queryable<U>): Queryable<T> {
     return new Queryable<T>(new UnionExpression(this._expr, other._expr, false))
   }
@@ -88,8 +110,8 @@ export class Queryable<T> {
     return new Queryable<T>(new UnionExpression(this._expr, other._expr, true))
   }
 
-  toSql(): SqlResult {
-    const t = new SqlTranslator()
+  toSql(options?: { naming?: NamingStrategy }): SqlResult {
+    const t = new SqlTranslator(options?.naming)
     if (this._expr.kind === 'UnionExpression')
       return t.translateUnion(this._expr as UnionExpression)
     return t.translateSelect(this._expr as SelectExpression)

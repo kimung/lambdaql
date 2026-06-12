@@ -6,9 +6,11 @@ import type {
 } from '@gamn9/expression'
 import type { SelectExpression, JoinExpression } from '../expression/select.js'
 import type { UnionExpression }                  from '../expression/union.js'
+import type { SubqueryCondition }               from '../expression/subquery.js'
 import type { InsertExpression }                 from '../expression/insert.js'
 import type { UpdateExpression }                 from '../expression/update.js'
 import type { DeleteExpression }                 from '../expression/delete.js'
+import { identityNaming, type NamingStrategy }   from '../naming.js'
 
 export interface SqlResult {
   sql:    string
@@ -26,6 +28,8 @@ export class SqlTranslator {
   private _params: unknown[] = []
   private _aliases: string[] = []
 
+  constructor(private readonly naming: NamingStrategy = identityNaming) {}
+
   private addParam(value: unknown): string {
     this._params.push(value)
     return `$${this._params.length}`
@@ -41,9 +45,11 @@ export class SqlTranslator {
     const joins    = expr.joins.length
       ? ' ' + expr.joins.map((j, i) => this.join(j, i + 1)).join(' ')
       : ''
-    const where  = expr.where.length
-      ? ' WHERE ' + expr.where.map(l => this.lambdaBody(l)).join(' AND ')
-      : ''
+    const whereParts = [
+      ...expr.where.map(l => this.lambdaBody(l)),
+      ...expr.subqueries.map(s => this.subqueryCond(s)),
+    ]
+    const where  = whereParts.length ? ' WHERE ' + whereParts.join(' AND ') : ''
     const group  = expr.groups.length
       ? ' GROUP BY ' + expr.groups.map(l => this.lambdaBody(l)).join(', ')
       : ''
@@ -107,14 +113,30 @@ export class SqlTranslator {
   private columns(expr: SelectExpression): string {
     if (!expr.selector) return '*'
     const aliases = this.aliasMap(expr.selector)
-    const obj = expr.selector.body as ObjectLiteralExpression
+    const body = expr.selector.body
+    // Projection scalaire : select(u => u.name) → une seule colonne, sans AS
+    if (body.kind !== 'ObjectLiteralExpression')
+      return this.expr(body, aliases)
+    const obj = body as ObjectLiteralExpression
     return obj.fields.map((f: FieldExpression) => `${this.expr(f.assignment, aliases)} AS ${f.name}`).join(', ')
   }
 
   private join(join: JoinExpression, idx: number): string {
     const target  = `${join.source.name} AS t${idx}`
-    const aliases = this.aliasMap(join.predicate)
+    const aliases = this.joinAliasMap(join.predicate, idx)
     return `${join.type} JOIN ${target} ON ${this.expr(join.predicate.body, aliases)}`
+  }
+
+  // Le prédicat de join s'écrit (sourceRow, jointeRow) => … : le 1er arg réfère la
+  // source (t0), le dernier la table jointe (t{idx}). Un mapping positionnel naïf
+  // depuis t0 casserait dès le 2e join (la jointe serait aliasée t1 au lieu de t{idx}).
+  private joinAliasMap(lambda: LambdaExpression, idx: number): Map<string, string> {
+    const map = new Map<string, string>()
+    const args = lambda.args
+    args.forEach((arg: NameExpression, i: number) => {
+      map.set(arg.name, i === args.length - 1 ? `t${idx}` : (this._aliases[i] ?? `t${i}`))
+    })
+    return map
   }
 
   private aliasMap(lambda: LambdaExpression): Map<string, string> {
@@ -157,6 +179,10 @@ export class SqlTranslator {
         if (b.operator === '%') {
           return `MOD(${this.expr(b.left, aliases)}, ${this.expr(b.right, aliases)})`
         }
+        // '??' est produit comme BinaryExpression par le parser et le compiler → COALESCE
+        if (b.operator === '??') {
+          return `COALESCE(${this.expr(b.left, aliases)}, ${this.expr(b.right, aliases)})`
+        }
         const op = SQL_OPS[b.operator] ?? b.operator
         return `(${this.expr(b.left, aliases)} ${op} ${this.expr(b.right, aliases)})`
       }
@@ -170,13 +196,13 @@ export class SqlTranslator {
       case 'PropertyExpression': {
         const p = node as PropertyExpression
         if (p.property === 'length') return `LENGTH(${this.expr(p.context, aliases)})`
-        // Fast path: direct param reference (u.age)
+        const col = this.naming(p.property)
         if (p.context.kind === 'NameExpression') {
           const alias = aliases.get((p.context as NameExpression).name)
-          if (alias === '')          return p.property            // DML: bare column
-          if (alias !== undefined)   return `${alias}.${p.property}` // SELECT: t0.column
+          if (alias === '')          return col            // DML: bare column
+          if (alias !== undefined)   return `${alias}.${col}` // SELECT: t0.column
         }
-        return `${this.expr(p.context, aliases)}.${p.property}`
+        return `${this.expr(p.context, aliases)}.${col}`
       }
 
       case 'ArrayLiteralExpression': {
@@ -232,7 +258,7 @@ export class SqlTranslator {
       if (side.kind === 'UnionExpression') return this.buildUnion(side as UnionExpression)
       // Each SELECT side needs fresh aliases but shared params accumulator.
       // Use a child translator to generate the SQL, then re-index its $n params.
-      const child  = new SqlTranslator()
+      const child  = new SqlTranslator(this.naming)
       const result = child.translateSelect(side as SelectExpression)
       const offset = this._params.length
       this._params.push(...result.params)
@@ -244,6 +270,26 @@ export class SqlTranslator {
     const right = buildSide(expr.right)
     const op    = expr.all ? 'UNION ALL' : 'UNION'
     return `(${left}) ${op} (${right})`
+  }
+
+  private subqueryCond(cond: SubqueryCondition): string {
+    const inner = this.buildSubquery(cond.inner)
+    if (cond.op === 'EXISTS' || cond.op === 'NOT EXISTS')
+      return `${cond.op} (${inner})`
+    const field = this.lambdaBody(cond.field!)
+    return `${field} ${cond.op} (${inner})`
+  }
+
+  private buildSubquery(inner: SelectExpression | UnionExpression): string {
+    const child  = new SqlTranslator(this.naming)
+    const result = inner.kind === 'UnionExpression'
+      ? child.translateUnion(inner as UnionExpression)
+      : child.translateSelect(inner as SelectExpression)
+    const offset = this._params.length
+    this._params.push(...result.params)
+    return offset === 0
+      ? result.sql
+      : result.sql.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n, 10) + offset}`)
   }
 
   private likeVal(arg: Expression | undefined): string {

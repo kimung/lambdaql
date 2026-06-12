@@ -1,5 +1,6 @@
 import type { LambdaExpression } from '@gamn9/expression'
-import type { SourceExpression } from './source.js'
+import type { SourceExpression }  from './source.js'
+import type { SubqueryCondition } from './subquery.js'
 
 export type JoinType = 'INNER' | 'LEFT'
 
@@ -25,15 +26,16 @@ export class SelectExpression {
 
   constructor(
     public readonly source:     SourceExpression,
-    public readonly where:      readonly LambdaExpression[] = [],
-    public readonly joins:      readonly JoinExpression[]   = [],
-    public readonly selector:   LambdaExpression | undefined = undefined,
-    public readonly groups:     readonly LambdaExpression[] = [],
-    public readonly having:     LambdaExpression | undefined = undefined,
-    public readonly orders:     readonly OrderExpression[]  = [],
-    public readonly limitVal:   number | undefined = undefined,
-    public readonly skipVal:    number | undefined = undefined,
-    public readonly isDistinct: boolean = false,
+    public readonly where:      readonly LambdaExpression[]   = [],
+    public readonly joins:      readonly JoinExpression[]     = [],
+    public readonly selector:   LambdaExpression | undefined  = undefined,
+    public readonly groups:     readonly LambdaExpression[]   = [],
+    public readonly having:     LambdaExpression | undefined  = undefined,
+    public readonly orders:     readonly OrderExpression[]    = [],
+    public readonly limitVal:   number | undefined            = undefined,
+    public readonly skipVal:    number | undefined            = undefined,
+    public readonly isDistinct: boolean                       = false,
+    public readonly subqueries: readonly SubqueryCondition[]  = [],
   ) {}
 
   patch(opts: Partial<{
@@ -46,6 +48,7 @@ export class SelectExpression {
     limitVal:   number | undefined
     skipVal:    number | undefined
     isDistinct: boolean
+    subqueries: readonly SubqueryCondition[]
   }>): SelectExpression {
     return new SelectExpression(
       this.source,
@@ -58,6 +61,7 @@ export class SelectExpression {
       'limitVal'  in opts ? opts.limitVal  : this.limitVal,
       'skipVal'   in opts ? opts.skipVal   : this.skipVal,
       opts.isDistinct ?? this.isDistinct,
+      opts.subqueries ?? this.subqueries,
     )
   }
 }

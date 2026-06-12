@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { from, insertInto, updateIn, deleteFrom } from '../src/queryable.js'
+import { snakeCaseNaming } from '../src/naming.js'
 
 type User = { id: number; name: string; age: number; active: boolean; deletedAt: string | null; email: string }
 type Post = { id: number; userId: number; title: string; published: boolean }
@@ -194,6 +195,66 @@ describe('SELECT — JOIN', () => {
   })
 })
 
+describe('SELECT — coalesce (??)', () => {
+  it('?? → COALESCE', () => {
+    const { sql, params } = from<User>('user')
+      .filter((u: any) => (u.name ?? 'anon') === 'x')
+      .toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE (COALESCE(t0.name, $1) = $2)')
+    expect(params).toEqual(['anon', 'x'])
+  })
+
+  it('?? dans une projection', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ name: u.name ?? 'N/A' }))
+      .toSql()
+    expect(sql).toBe('SELECT COALESCE(t0.name, $1) AS name FROM user AS t0')
+    expect(params).toEqual(['N/A'])
+  })
+})
+
+describe('SELECT — projection scalaire', () => {
+  it('select(u => u.name) → une seule colonne sans AS', () => {
+    const { sql, params } = from<User>('user').select((u: any) => u.name).toSql()
+    expect(sql).toBe('SELECT t0.name FROM user AS t0')
+    expect(params).toEqual([])
+  })
+
+  it('projection scalaire avec expression', () => {
+    const { sql, params } = from<User>('user').select((u: any) => u.age + 1).toSql()
+    expect(sql).toBe('SELECT (t0.age + $1) FROM user AS t0')
+    expect(params).toEqual([1])
+  })
+})
+
+describe('SELECT — JOIN multiples (aliasing)', () => {
+  type Comment = { id: number; userId: number; body: string }
+
+  it('deux JOIN → t1 puis t2 correctement aliasés', () => {
+    const { sql } = from<User>('user')
+      .join(from<Post>('post'), (u, p) => u.id === p.userId)
+      .join(from<Comment>('comment'), (u, c) => u.id === c.userId)
+      .toSql()
+    expect(sql).toBe(
+      'SELECT * FROM user AS t0' +
+      ' INNER JOIN post AS t1 ON (t0.id = t1.userId)' +
+      ' INNER JOIN comment AS t2 ON (t0.id = t2.userId)',
+    )
+  })
+
+  it('trois JOIN → t1, t2, t3', () => {
+    type Tag = { id: number; userId: number }
+    const { sql } = from<User>('user')
+      .join(from<Post>('post'), (u, p) => u.id === p.userId)
+      .join(from<Comment>('comment'), (u, c) => u.id === c.userId)
+      .join(from<Tag>('tag'), (u, t) => u.id === t.userId)
+      .toSql()
+    expect(sql).toContain('INNER JOIN post AS t1 ON (t0.id = t1.userId)')
+    expect(sql).toContain('INNER JOIN comment AS t2 ON (t0.id = t2.userId)')
+    expect(sql).toContain('INNER JOIN tag AS t3 ON (t0.id = t3.userId)')
+  })
+})
+
 describe('SELECT — IN', () => {
   it('[].includes(u.id) → IN ($1, $2, $3)', () => {
     const { sql, params } = from<User>('user').filter((u: any) => [1, 2, 3].includes(u.id)).toSql()
@@ -205,6 +266,74 @@ describe('SELECT — IN', () => {
     const { sql, params } = from<User>('user').filter((u: any) => ['a', 'b'].includes(u.name)).toSql()
     expect(sql).toBe('SELECT * FROM user AS t0 WHERE t0.name IN ($1, $2)')
     expect(params).toEqual(['a', 'b'])
+  })
+})
+
+describe('Sous-requêtes — IN / NOT IN', () => {
+  it('whereIn → IN (SELECT ...)', () => {
+    type Order = { userId: number; total: number }
+    const inner = from<Order>('orders').filter(o => o.total > 100).select((o: any) => ({ userId: o.userId }))
+    const { sql, params } = from<User>('user')
+      .whereIn(u => u.id, inner)
+      .toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE t0.id IN (SELECT t0.userId AS userId FROM orders AS t0 WHERE (t0.total > $1))')
+    expect(params).toEqual([100])
+  })
+
+  it('whereNotIn → NOT IN (SELECT ...)', () => {
+    type Order = { userId: number }
+    const inner = from<Order>('orders').select((o: any) => ({ userId: o.userId }))
+    const { sql, params } = from<User>('user')
+      .whereNotIn(u => u.id, inner)
+      .toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE t0.id NOT IN (SELECT t0.userId AS userId FROM orders AS t0)')
+    expect(params).toEqual([])
+  })
+
+  it('whereIn avec param réindexé', () => {
+    type Order = { userId: number; total: number }
+    const inner = from<Order>('orders').filter(o => o.total > 50).select((o: any) => ({ userId: o.userId }))
+    const { sql, params } = from<User>('user')
+      .filter(u => u.age > 18)
+      .whereIn(u => u.id, inner)
+      .toSql()
+    // $1 = 18 (outer), $2 = 50 (inner — réindexé)
+    expect(params).toEqual([18, 50])
+    expect(sql).toContain('$1')
+    expect(sql).toContain('$2')
+  })
+})
+
+describe('Sous-requêtes — EXISTS / NOT EXISTS', () => {
+  it('whereExists → EXISTS (SELECT ...)', () => {
+    type Order = { userId: number }
+    const inner = from<Order>('orders').filter((o: any) => o.userId === 1)
+    const { sql, params } = from<User>('user')
+      .whereExists(inner)
+      .toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE EXISTS (SELECT * FROM orders AS t0 WHERE (t0.userId = $1))')
+    expect(params).toEqual([1])
+  })
+
+  it('whereNotExists → NOT EXISTS (SELECT ...)', () => {
+    type Order = { userId: number }
+    const inner = from<Order>('orders').filter((o: any) => o.userId === 99)
+    const { sql, params } = from<User>('user')
+      .whereNotExists(inner)
+      .toSql()
+    expect(sql).toContain('NOT EXISTS')
+    expect(params).toEqual([99])
+  })
+
+  it('WHERE + EXISTS combinés', () => {
+    type Order = { userId: number }
+    const inner = from<Order>('orders').filter((o: any) => o.userId === 5)
+    const { sql, params } = from<User>('user')
+      .filter(u => u.active)
+      .whereExists(inner)
+      .toSql()
+    expect(sql).toContain('WHERE t0.active AND EXISTS')
+    expect(params).toEqual([5])
   })
 })
 
@@ -272,5 +401,54 @@ describe('DELETE', () => {
     const { sql, params } = deleteFrom<User>('user', u => u.active === false && u.deletedAt !== null)
     expect(sql).toBe('DELETE FROM user WHERE ((active = $1) AND deletedAt IS NOT NULL)')
     expect(params).toEqual([false])
+  })
+})
+
+type CamelUser = { id: number; firstName: string; lastName: string; isActive: boolean; createdAt: string | null }
+
+describe('NamingStrategy — snakeCaseNaming', () => {
+  it('convertit les propriétés camelCase en snake_case', () => {
+    const { sql } = from<CamelUser>('users')
+      .filter(u => u.firstName === 'Kim')
+      .toSql({ naming: snakeCaseNaming })
+    expect(sql).toContain('first_name')
+    expect(sql).not.toContain('firstName')
+  })
+
+  it('applique le naming dans le ORDER BY', () => {
+    const { sql } = from<CamelUser>('users')
+      .orderBy(u => u.createdAt)
+      .toSql({ naming: snakeCaseNaming })
+    expect(sql).toContain('created_at')
+  })
+
+  it('applique le naming dans le SELECT projection', () => {
+    const { sql } = from<CamelUser>('users')
+      .select((u: any) => ({ firstName: u.firstName, lastName: u.lastName }))
+      .toSql({ naming: snakeCaseNaming })
+    expect(sql).toContain('t0.first_name AS firstName')
+    expect(sql).toContain('t0.last_name AS lastName')
+  })
+
+  it('isActive → is_active dans le WHERE', () => {
+    const { sql, params } = from<CamelUser>('users')
+      .filter(u => u.isActive)
+      .toSql({ naming: snakeCaseNaming })
+    expect(sql).toBe('SELECT * FROM users AS t0 WHERE t0.is_active')
+    expect(params).toEqual([])
+  })
+
+  it('NULL check avec naming', () => {
+    const { sql } = from<CamelUser>('users')
+      .filter(u => u.createdAt === null)
+      .toSql({ naming: snakeCaseNaming })
+    expect(sql).toContain('created_at IS NULL')
+  })
+
+  it('sans naming — comportement identique à identityNaming', () => {
+    const { sql: withNaming } = from<User>('user').filter(u => u.age > 18).toSql({ naming: snakeCaseNaming })
+    const { sql: withoutNaming } = from<User>('user').filter(u => u.age > 18).toSql()
+    // 'age' n'a pas de majuscule → snake_case identique
+    expect(withNaming).toBe(withoutNaming)
   })
 })
