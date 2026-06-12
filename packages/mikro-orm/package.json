@@ -1,0 +1,29 @@
+{
+  "name": "@gamn9/mikro-orm",
+  "version": "1.0.0",
+  "description": "MikroORM QueryBuilder integration for @gamn9/data",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+  },
+  "scripts": {
+    "build":     "tsc",
+    "test":      "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@mikro-orm/core": ">=6.0.0",
+    "@gamn9/data": "*"
+  },
+  "devDependencies": {
+    "@mikro-orm/better-sqlite": "^6.0.0",
+    "@mikro-orm/core": "^6.0.0",
+    "@gamn9/data": "*",
+    "@gamn9/expression": "*",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
