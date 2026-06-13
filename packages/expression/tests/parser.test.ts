@@ -158,4 +158,30 @@ describe('Parser — LambdaExpression', () => {
     expect(m.args).toHaveLength(2)
     expect(m.args[0].operator).toBe('??')
   })
+
+  describe('précédence arithmétique > comparaison', () => {
+    it('x < a + b → x < (a + b)', () => {
+      const ast = parse('(x, a, b) => x < a + b') as any
+      expect(ast.body.operator).toBe('<')
+      expect(ast.body.right.operator).toBe('+')
+    })
+
+    it('x < a * b → x < (a * b)', () => {
+      const ast = parse('(x, a, b) => x < a * b') as any
+      expect(ast.body.operator).toBe('<')
+      expect(ast.body.right.operator).toBe('*')
+    })
+
+    it('a + b > x → (a + b) > x', () => {
+      const ast = parse('(x, a, b) => a + b > x') as any
+      expect(ast.body.operator).toBe('>')
+      expect(ast.body.left.operator).toBe('+')
+    })
+
+    it('a < b === c < d → (a < b) === (c < d)', () => {
+      const ast = parse('(a, b, c, d) => a < b === (c < d)') as any
+      expect(ast.body.operator).toBe('===')
+      expect(ast.body.left.operator).toBe('<')
+    })
+  })
 })
