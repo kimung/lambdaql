@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { from, insertInto, updateIn, deleteFrom } from '../src/queryable.js'
 import { snakeCaseNaming } from '../src/naming.js'
+import {
+  ConstantExpression, MethodExpression, NameExpression, LambdaExpression, PropertyExpression,
+} from '@gamn9/expression'
 
 type User = { id: number; name: string; age: number; active: boolean; deletedAt: string | null; email: string }
 type Post = { id: number; userId: number; title: string; published: boolean }
@@ -266,6 +269,36 @@ describe('SELECT — IN', () => {
     const { sql, params } = from<User>('user').filter((u: any) => ['a', 'b'].includes(u.name)).toSql()
     expect(sql).toBe('SELECT * FROM user AS t0 WHERE t0.name IN ($1, $2)')
     expect(params).toEqual(['a', 'b'])
+  })
+
+  it('closure array (ConstantExpression) → IN avec params', () => {
+    // Simule ce que le compiler AOT produit pour `ids.includes(u.id)`
+    const ids = [10, 20, 30]
+    const lambda = new LambdaExpression(
+      new MethodExpression(
+        new ConstantExpression(ids),
+        'includes',
+        [new PropertyExpression(new NameExpression('u'), 'id')],
+      ),
+      [new NameExpression('u')],
+    )
+    const { sql, params } = from<User>('user').filter(lambda).toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE t0.id IN ($1, $2, $3)')
+    expect(params).toEqual([10, 20, 30])
+  })
+
+  it('closure array vide → 1 = 0', () => {
+    const lambda = new LambdaExpression(
+      new MethodExpression(
+        new ConstantExpression([]),
+        'includes',
+        [new PropertyExpression(new NameExpression('u'), 'id')],
+      ),
+      [new NameExpression('u')],
+    )
+    const { sql, params } = from<User>('user').filter(lambda).toSql()
+    expect(sql).toBe('SELECT * FROM user AS t0 WHERE 1 = 0')
+    expect(params).toEqual([])
   })
 })
 

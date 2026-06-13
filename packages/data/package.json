@@ -2,19 +2,30 @@
   "name": "@gamn9/data",
   "version": "1.0.0",
   "description": "Typed SQL query builder powered by @gamn9/expression",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamn9/gamn9",
+    "directory": "packages/data"
+  },
+  "keywords": ["query-builder", "sql", "typescript", "linq", "type-safe"],
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./package.json": "./package.json"
   },
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build":     "tsc",
     "test":      "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@gamn9/expression": "*"
+    "@gamn9/expression": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -5,12 +5,15 @@ import type {
   ArrayLiteralExpression,
 } from '@gamn9/expression'
 import type { SelectExpression, JoinExpression } from '../expression/select.js'
+import type { RawExpression }                    from '../expression/raw.js'
+import type { CteExpression }                    from '../expression/cte.js'
 import type { UnionExpression }                  from '../expression/union.js'
 import type { SubqueryCondition }               from '../expression/subquery.js'
 import type { InsertExpression }                 from '../expression/insert.js'
 import type { UpdateExpression }                 from '../expression/update.js'
 import type { DeleteExpression }                 from '../expression/delete.js'
 import { identityNaming, type NamingStrategy }   from '../naming.js'
+import { postgres, type Dialect }                from './dialect.js'
 
 export interface SqlResult {
   sql:    string
@@ -28,16 +31,23 @@ export class SqlTranslator {
   private _params: unknown[] = []
   private _aliases: string[] = []
 
-  constructor(private readonly naming: NamingStrategy = identityNaming) {}
+  constructor(
+    private readonly naming:  NamingStrategy = identityNaming,
+    private readonly dialect: Dialect        = postgres,
+  ) {}
 
   private addParam(value: unknown): string {
     this._params.push(value)
-    return `$${this._params.length}`
+    return this.dialect.placeholder(this._params.length)
   }
 
   translateSelect(expr: SelectExpression): SqlResult {
     this._params = []
     this._aliases = ['t0', ...expr.joins.map((_, i) => `t${i + 1}`)]
+
+    // Les CTE sont traduits EN PREMIER : leurs params précèdent ceux du SELECT dans le SQL textuel.
+    // Ne pas réordonner — cela casserait la numérotation $n.
+    const withClause = expr.ctes.length ? this.buildWithClause(expr.ctes) : ''
 
     const distinct = expr.isDistinct ? ' DISTINCT' : ''
     const columns  = this.columns(expr)
@@ -48,22 +58,26 @@ export class SqlTranslator {
     const whereParts = [
       ...expr.where.map(l => this.lambdaBody(l)),
       ...expr.subqueries.map(s => this.subqueryCond(s)),
+      ...expr.rawWheres.map(r => this.rawSql(r)),
     ]
     const where  = whereParts.length ? ' WHERE ' + whereParts.join(' AND ') : ''
     const group  = expr.groups.length
       ? ' GROUP BY ' + expr.groups.map(l => this.lambdaBody(l)).join(', ')
       : ''
-    const having = expr.having
-      ? ' HAVING ' + this.lambdaBody(expr.having)
-      : ''
-    const order  = expr.orders.length
-      ? ' ORDER BY ' + expr.orders.map(o => `${this.lambdaBody(o.selector)} ${o.direction}`).join(', ')
-      : ''
-    const limit  = expr.limitVal != null ? ` LIMIT ${expr.limitVal}` : ''
-    const offset = expr.skipVal  != null ? ` OFFSET ${expr.skipVal}` : ''
+    const havingParts = [
+      ...(expr.having    ? [this.lambdaBody(expr.having)]  : []),
+      ...(expr.rawHaving ? [this.rawSql(expr.rawHaving)]   : []),
+    ]
+    const having = havingParts.length ? ' HAVING ' + havingParts.join(' AND ') : ''
+    const orderParts = [
+      ...expr.orders.map(o => `${this.lambdaBody(o.selector)} ${o.direction}`),
+      ...expr.rawOrders.map(r => this.rawSql(r)),
+    ]
+    const order  = orderParts.length ? ' ORDER BY ' + orderParts.join(', ') : ''
+    const limitOffset = this.dialect.limitOffset(expr.limitVal, expr.skipVal)
 
     return {
-      sql: `SELECT${distinct} ${columns} FROM ${source}${joins}${where}${group}${having}${order}${limit}${offset}`,
+      sql: `${withClause}SELECT${distinct} ${columns} FROM ${source}${joins}${where}${group}${having}${order}${limitOffset}`,
       params: this._params,
     }
   }
@@ -177,11 +191,11 @@ export class SqlTranslator {
           }
         }
         if (b.operator === '%') {
-          return `MOD(${this.expr(b.left, aliases)}, ${this.expr(b.right, aliases)})`
+          return this.dialect.fn('mod', [this.expr(b.left, aliases), this.expr(b.right, aliases)])
         }
         // '??' est produit comme BinaryExpression par le parser et le compiler → COALESCE
         if (b.operator === '??') {
-          return `COALESCE(${this.expr(b.left, aliases)}, ${this.expr(b.right, aliases)})`
+          return this.dialect.fn('coalesce', [this.expr(b.left, aliases), this.expr(b.right, aliases)])
         }
         const op = SQL_OPS[b.operator] ?? b.operator
         return `(${this.expr(b.left, aliases)} ${op} ${this.expr(b.right, aliases)})`
@@ -195,7 +209,7 @@ export class SqlTranslator {
 
       case 'PropertyExpression': {
         const p = node as PropertyExpression
-        if (p.property === 'length') return `LENGTH(${this.expr(p.context, aliases)})`
+        if (p.property === 'length') return this.dialect.fn('length', [this.expr(p.context, aliases)])
         const col = this.naming(p.property)
         if (p.context.kind === 'NameExpression') {
           const alias = aliases.get((p.context as NameExpression).name)
@@ -212,12 +226,52 @@ export class SqlTranslator {
 
       case 'MethodExpression': {
         const m = node as MethodExpression
+        // Window function : fnFenêtre().over({ partitionBy, orderBy, orderByDesc })
+        if (m.method === 'over'
+            && m.args[0]?.kind === 'ObjectLiteralExpression'
+            && m.context.kind === 'MethodExpression') {
+          const innerFn    = m.context as MethodExpression
+          const overClause = this.buildOver(m.args[0] as ObjectLiteralExpression, aliases)
+          const WINDOW_NO_ARG = new Map([
+            ['rank', 'RANK'], ['denseRank', 'DENSE_RANK'], ['rowNumber', 'ROW_NUMBER'],
+          ])
+          const noArgName = WINDOW_NO_ARG.get(innerFn.method)
+          if (noArgName) return `${noArgName}() ${overClause}`
+          const AGG = new Set(['count', 'min', 'max', 'avg', 'sum'])
+          if (AGG.has(innerFn.method)) {
+            const ctxNode = innerFn.context
+            const col = ctxNode.kind === 'NameExpression' && aliases.has((ctxNode as NameExpression).name)
+              ? '*'
+              : this.expr(ctxNode, aliases)
+            return `${innerFn.method.toUpperCase()}(${col}) ${overClause}`
+          }
+        }
+        // Math.floor/ceil/round/abs → fonction SQL portable
+        if (m.context.kind === 'NameExpression' && (m.context as NameExpression).name === 'Math') {
+          const arg = this.expr(m.args[0]!, aliases)
+          switch (m.method) {
+            case 'floor': return this.dialect.fn('floor', [arg])
+            case 'ceil':  return this.dialect.fn('ceil',  [arg])
+            case 'round': return this.dialect.fn('round', [arg])
+            case 'abs':   return this.dialect.fn('abs',   [arg])
+          }
+        }
         // [1, 2, 3].includes(u.id) → u.id IN ($1, $2, $3)
         if (m.method === 'includes' && m.context.kind === 'ArrayLiteralExpression') {
           const arr  = m.context as ArrayLiteralExpression
           const val  = this.expr(m.args[0]!, aliases)
           const list = arr.elements.map(e => this.expr(e, aliases)).join(', ')
           return `${val} IN (${list})`
+        }
+        // ids.includes(u.id) où ids est une closure array (produit par le compiler AOT)
+        if (m.method === 'includes' && m.context.kind === 'ConstantExpression') {
+          const c = m.context as ConstantExpression
+          if (Array.isArray(c.value)) {
+            const arr = c.value as unknown[]
+            if (arr.length === 0) return '1 = 0'
+            const val = this.expr(m.args[0]!, aliases)
+            return `${val} IN (${arr.map(v => this.addParam(v)).join(', ')})`
+          }
         }
         const ctx = this.expr(m.context, aliases)
         switch (m.method) {
@@ -230,6 +284,15 @@ export class SqlTranslator {
           case 'replace':     return `REPLACE(${ctx}, ${this.expr(m.args[0]!, aliases)}, ${this.expr(m.args[1]!, aliases)})`
           case 'count': case 'min': case 'max': case 'avg': case 'sum':
             return `${m.method.toUpperCase()}(${ctx})`
+          // Méthodes de date JS → fonctions SQL portables via le dialecte
+          // Note : getMonth() retourne 0-11 en JS mais EXTRACT(MONTH) retourne 1-12 en SQL
+          case 'getFullYear': return this.dialect.fn('year',      [ctx])
+          case 'getMonth':    return this.dialect.fn('month',     [ctx])
+          case 'getDate':     return this.dialect.fn('day',       [ctx])
+          case 'getDay':      return this.dialect.fn('dayofweek', [ctx])
+          case 'getHours':    return this.dialect.fn('hour',      [ctx])
+          case 'getMinutes':  return this.dialect.fn('minute',    [ctx])
+          case 'getSeconds':  return this.dialect.fn('second',    [ctx])
           default:
             throw new Error(`Unsupported method: ${m.method}`)
         }
@@ -242,7 +305,7 @@ export class SqlTranslator {
 
       case 'NullishExpression': {
         const n = node as NullishExpression
-        return `COALESCE(${this.expr(n.left, aliases)}, ${this.expr(n.right, aliases)})`
+        return this.dialect.fn('coalesce', [this.expr(n.left, aliases), this.expr(n.right, aliases)])
       }
 
       case 'LambdaExpression':
@@ -257,14 +320,12 @@ export class SqlTranslator {
     const buildSide = (side: SelectExpression | UnionExpression): string => {
       if (side.kind === 'UnionExpression') return this.buildUnion(side as UnionExpression)
       // Each SELECT side needs fresh aliases but shared params accumulator.
-      // Use a child translator to generate the SQL, then re-index its $n params.
-      const child  = new SqlTranslator(this.naming)
+      // Use a child translator to generate the SQL, then re-index its placeholders.
+      const child  = new SqlTranslator(this.naming, this.dialect)
       const result = child.translateSelect(side as SelectExpression)
       const offset = this._params.length
       this._params.push(...result.params)
-      return offset === 0
-        ? result.sql
-        : result.sql.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n, 10) + offset}`)
+      return this.dialect.reindex(result.sql, offset)
     }
     const left  = buildSide(expr.left)
     const right = buildSide(expr.right)
@@ -281,20 +342,68 @@ export class SqlTranslator {
   }
 
   private buildSubquery(inner: SelectExpression | UnionExpression): string {
-    const child  = new SqlTranslator(this.naming)
+    const child  = new SqlTranslator(this.naming, this.dialect)
     const result = inner.kind === 'UnionExpression'
       ? child.translateUnion(inner as UnionExpression)
       : child.translateSelect(inner as SelectExpression)
     const offset = this._params.length
     this._params.push(...result.params)
-    return offset === 0
-      ? result.sql
-      : result.sql.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n, 10) + offset}`)
+    return this.dialect.reindex(result.sql, offset)
+  }
+
+  private buildWithClause(ctes: readonly CteExpression[]): string {
+    const hasRecursive = ctes.some(c => c.recursive)
+    const keyword = hasRecursive ? 'WITH RECURSIVE ' : 'WITH '
+    const parts = ctes.map(cte => {
+      const child  = new SqlTranslator(this.naming, this.dialect)
+      const result = cte.query.kind === 'UnionExpression'
+        ? child.translateUnion(cte.query as any)
+        : child.translateSelect(cte.query as any)
+      const offset = this._params.length
+      this._params.push(...result.params)
+      const sql = this.dialect.reindex(result.sql, offset)
+      return `${cte.name} AS (${sql})`
+    })
+    return `${keyword}${parts.join(', ')} `
+  }
+
+  // Remplace chaque '?' du fragment raw par un paramètre préparé dialecte-correct.
+  private rawSql(raw: RawExpression): string {
+    let result = ''
+    let paramIdx = 0
+    for (const ch of raw.sql) {
+      result += ch === '?' ? this.addParam(raw.params[paramIdx++]) : ch
+    }
+    return result
+  }
+
+  private buildOver(spec: ObjectLiteralExpression, aliases: Map<string, string>): string {
+    let partitionParts: string[] = []
+    let orderParts: string[]     = []
+    let direction = 'ASC'
+
+    for (const field of spec.fields as FieldExpression[]) {
+      if (field.name === 'partitionBy') {
+        partitionParts = field.assignment.kind === 'ArrayLiteralExpression'
+          ? (field.assignment as ArrayLiteralExpression).elements.map(e => this.expr(e, aliases))
+          : [this.expr(field.assignment, aliases)]
+      } else if (field.name === 'orderBy' || field.name === 'orderByDesc') {
+        direction   = field.name === 'orderByDesc' ? 'DESC' : 'ASC'
+        orderParts  = field.assignment.kind === 'ArrayLiteralExpression'
+          ? (field.assignment as ArrayLiteralExpression).elements.map(e => this.expr(e, aliases))
+          : [this.expr(field.assignment, aliases)]
+      }
+    }
+
+    const parts: string[] = []
+    if (partitionParts.length) parts.push(`PARTITION BY ${partitionParts.join(', ')}`)
+    if (orderParts.length)     parts.push(`ORDER BY ${orderParts.join(', ')} ${direction}`)
+    return `OVER (${parts.join(' ')})`
   }
 
   private likeVal(arg: Expression | undefined): string {
     if (!arg || arg.kind !== 'ConstantExpression')
-      throw new Error('LIKE argument must be a string constant')
+      throw new Error('LIKE argument must be a string constant — use the @gamn9/compiler AOT transformer for closure values')
     return String((arg as ConstantExpression).value)
       .replace(/%/g, '\\%')
       .replace(/_/g, '\\_')

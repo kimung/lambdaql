@@ -1,6 +1,8 @@
 import type { LambdaExpression } from '@gamn9/expression'
 import type { SourceExpression }  from './source.js'
 import type { SubqueryCondition } from './subquery.js'
+import type { RawExpression }     from './raw.js'
+import type { CteExpression }     from './cte.js'
 
 export type JoinType = 'INNER' | 'LEFT'
 
@@ -36,6 +38,10 @@ export class SelectExpression {
     public readonly skipVal:    number | undefined            = undefined,
     public readonly isDistinct: boolean                       = false,
     public readonly subqueries: readonly SubqueryCondition[]  = [],
+    public readonly rawWheres:  readonly RawExpression[]      = [],
+    public readonly rawHaving:  RawExpression | undefined     = undefined,
+    public readonly rawOrders:  readonly RawExpression[]      = [],
+    public readonly ctes:       readonly CteExpression[]      = [],
   ) {}
 
   patch(opts: Partial<{
@@ -49,19 +55,27 @@ export class SelectExpression {
     skipVal:    number | undefined
     isDistinct: boolean
     subqueries: readonly SubqueryCondition[]
+    rawWheres:  readonly RawExpression[]
+    rawHaving:  RawExpression | undefined
+    rawOrders:  readonly RawExpression[]
+    ctes:       readonly CteExpression[]
   }>): SelectExpression {
     return new SelectExpression(
       this.source,
       opts.where      ?? this.where,
       opts.joins      ?? this.joins,
-      'selector'  in opts ? opts.selector  : this.selector,
+      'selector'   in opts ? opts.selector  : this.selector,
       opts.groups     ?? this.groups,
-      'having'    in opts ? opts.having    : this.having,
+      'having'     in opts ? opts.having    : this.having,
       opts.orders     ?? this.orders,
-      'limitVal'  in opts ? opts.limitVal  : this.limitVal,
-      'skipVal'   in opts ? opts.skipVal   : this.skipVal,
+      'limitVal'   in opts ? opts.limitVal  : this.limitVal,
+      'skipVal'    in opts ? opts.skipVal   : this.skipVal,
       opts.isDistinct ?? this.isDistinct,
       opts.subqueries ?? this.subqueries,
+      opts.rawWheres  ?? this.rawWheres,
+      'rawHaving'  in opts ? opts.rawHaving : this.rawHaving,
+      opts.rawOrders  ?? this.rawOrders,
+      opts.ctes       ?? this.ctes,
     )
   }
 }
