@@ -2,12 +2,23 @@
   "name": "@gamn9/mikro-orm",
   "version": "1.0.0",
   "description": "MikroORM QueryBuilder integration for @gamn9/data",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamn9/gamn9",
+    "directory": "packages/mikro-orm"
+  },
+  "keywords": ["query-builder", "sql", "typescript", "mikro-orm", "linq"],
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./package.json": "./package.json"
   },
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build":     "tsc",
     "test":      "vitest run",
@@ -15,7 +26,7 @@
   },
   "peerDependencies": {
     "@mikro-orm/core": ">=6.0.0",
-    "@gamn9/data": "*"
+    "@gamn9/data": "^1.0.0"
   },
   "devDependencies": {
     "@mikro-orm/better-sqlite": "^6.0.0",

@@ -3,7 +3,7 @@ import type {
   BinaryExpression, UnaryExpression, PropertyExpression, MethodExpression,
   ConditionalExpression, NullishExpression, ArrayLiteralExpression,
 } from '@gamn9/expression'
-import { identityNaming, SqlTranslator, type NamingStrategy, type Queryable } from '@gamn9/data'
+import { identityNaming, SqlTranslator, mysql, type NamingStrategy, type Queryable } from '@gamn9/data'
 import type { SelectExpression, SubqueryCondition } from '@gamn9/data'
 import type { MikroORM, EntityManager, EntityName } from '@mikro-orm/core'
 
@@ -197,6 +197,22 @@ export function applyQueryable<T extends object>(
     qb.andWhere(condition, params)
   }
 
+  for (const raw of se.rawWheres) {
+    qb.andWhere(raw.sql, raw.params as unknown[])
+  }
+
+  if (se.rawHaving) {
+    qb.having(se.rawHaving.sql, se.rawHaving.params as unknown[])
+  }
+
+  if (se.rawOrders.length > 0) {
+    throw new Error('@gamn9/mikro-orm: orderByRaw() non supporté — utilisez qb.orderBy() directement')
+  }
+
+  if (se.ctes.length > 0) {
+    throw new Error('@gamn9/mikro-orm: withCte() non supporté — utilisez le QB MikroORM directement')
+  }
+
   if (se.limitVal != null) qb.limit(se.limitVal)
   if (se.skipVal  != null) qb.offset(se.skipVal)
 
@@ -209,11 +225,12 @@ function subqueryToMikroOrm(
   naming: NamingStrategy,
   builder: MikroOrmConditionBuilder,
 ): { condition: string; params: unknown[] } {
-  const t      = new SqlTranslator(naming)
+  // Le dialecte mysql utilise des placeholders '?' compatibles avec le QB MikroORM.
+  const t      = new SqlTranslator(naming, mysql)
   const result = sub.inner.kind === 'UnionExpression'
     ? t.translateUnion(sub.inner as any)
     : t.translateSelect(sub.inner as any)
-  const innerSql = result.sql.replace(/\$\d+/g, '?')
+  const innerSql = result.sql
 
   if (sub.op === 'EXISTS' || sub.op === 'NOT EXISTS')
     return { condition: `${sub.op} (${innerSql})`, params: result.params }
@@ -322,11 +339,29 @@ class MikroOrmConditionBuilder {
 
       case 'MethodExpression': {
         const m = node as MethodExpression
+        if (m.context.kind === 'NameExpression' && (m.context as NameExpression).name === 'Math') {
+          const arg = this.expr(m.args[0]!, aliases)
+          switch (m.method) {
+            case 'floor': return `FLOOR(${arg})`
+            case 'ceil':  return `CEIL(${arg})`
+            case 'round': return `ROUND(${arg})`
+            case 'abs':   return `ABS(${arg})`
+          }
+        }
         if (m.method === 'includes' && m.context.kind === 'ArrayLiteralExpression') {
           const arr  = m.context as ArrayLiteralExpression
           const val  = this.expr(m.args[0]!, aliases)
           const list = arr.elements.map(e => this.expr(e, aliases)).join(', ')
           return `${val} IN (${list})`
+        }
+        if (m.method === 'includes' && m.context.kind === 'ConstantExpression') {
+          const c = m.context as ConstantExpression
+          if (Array.isArray(c.value)) {
+            const arr = c.value as unknown[]
+            if (arr.length === 0) return '1 = 0'
+            const val = this.expr(m.args[0]!, aliases)
+            return `${val} IN (${arr.map(v => this.addParam(v)).join(', ')})`
+          }
         }
         const ctx = this.expr(m.context, aliases)
         switch (m.method) {
@@ -339,6 +374,13 @@ class MikroOrmConditionBuilder {
           case 'replace':     return `REPLACE(${ctx}, ${this.expr(m.args[0]!, aliases)}, ${this.expr(m.args[1]!, aliases)})`
           case 'count': case 'min': case 'max': case 'avg': case 'sum':
             return `${m.method.toUpperCase()}(${ctx})`
+          case 'getFullYear': return `EXTRACT(YEAR FROM ${ctx})`
+          case 'getMonth':    return `EXTRACT(MONTH FROM ${ctx})`
+          case 'getDate':     return `EXTRACT(DAY FROM ${ctx})`
+          case 'getDay':      return `EXTRACT(DOW FROM ${ctx})`
+          case 'getHours':    return `EXTRACT(HOUR FROM ${ctx})`
+          case 'getMinutes':  return `EXTRACT(MINUTE FROM ${ctx})`
+          case 'getSeconds':  return `EXTRACT(SECOND FROM ${ctx})`
           default:
             throw new Error(`@gamn9/mikro-orm: méthode non supportée : ${m.method}`)
         }
