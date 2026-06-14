@@ -1,0 +1,39 @@
+{
+  "name": "@gamn9/pg",
+  "version": "1.0.0",
+  "description": "PostgreSQL driver for @gamn9/data (node-postgres / pg)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamn9/gamn9",
+    "directory": "packages/pg"
+  },
+  "keywords": ["query-builder", "sql", "postgresql", "pg", "linq"],
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public" },
+  "scripts": {
+    "build":     "tsc",
+    "test":      "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@gamn9/data": "^1.0.0",
+    "pg": ">=8.0.0"
+  },
+  "devDependencies": {
+    "@gamn9/data": "*",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.0.0",
+    "pg": ">=8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
