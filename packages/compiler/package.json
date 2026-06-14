@@ -2,12 +2,23 @@
   "name": "@gamn9/compiler",
   "version": "1.0.0",
   "description": "TypeScript Custom Transformer — compiles @gamn9 lambdas to AST at build time",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamn9/gamn9",
+    "directory": "packages/compiler"
+  },
+  "keywords": ["query-builder", "typescript", "transformer", "aot", "ts-patch", "linq"],
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" }
+    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    "./package.json": "./package.json"
   },
+  "files": ["dist", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build":     "tsc",
     "test":      "vitest run",

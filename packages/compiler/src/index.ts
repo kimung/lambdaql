@@ -1,5 +1,10 @@
 import * as ts from 'typescript'
 
+// Identifiants globaux qui doivent émettre NameExpression (pas ConstantExpression) en AOT.
+// Sans cette whitelist, Math serait emballé en ConstantExpression portant l'objet Math,
+// ce qui casse la détection `m.context.kind === 'NameExpression' && name === 'Math'` dans le translator.
+const GLOBAL_NAMES = new Set(['Math'])
+
 // Méthodes de Queryable dont le premier argument (ou second pour join) est une lambda à transformer
 const QUERYABLE_METHODS = new Set([
   'filter', 'select', 'groupBy', 'having', 'orderBy', 'orderByDesc',
@@ -93,7 +98,7 @@ function transformExpr(
 ): ts.Expression {
   // Identifier
   if (ts.isIdentifier(node)) {
-    if (params.has(node.text))
+    if (params.has(node.text) || GLOBAL_NAMES.has(node.text))
       return obj('NameExpression', [prop('name', str(node.text))])
     // Closure : identifiant externe — garder la référence vive, emballer en ConstantExpression
     return obj('ConstantExpression', [prop('value', node)])
