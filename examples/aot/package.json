@@ -1,0 +1,21 @@
+{
+  "name": "@gamn9/example-aot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare": "ts-patch install -s",
+    "build":   "tsc",
+    "start":   "npm run build && node dist/index.js"
+  },
+  "dependencies": {
+    "@gamn9/compiler": "*",
+    "@gamn9/data": "*",
+    "@gamn9/sqlite": "*"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "*",
+    "ts-patch": "^3.3.0",
+    "typescript": "^5.7.0"
+  }
+}

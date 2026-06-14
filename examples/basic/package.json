@@ -1,0 +1,17 @@
+{
+  "name": "@gamn9/example-basic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@gamn9/data": "*",
+    "@gamn9/sqlite": "*"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "better-sqlite3": "*",
+    "tsx": "*"
+  }
+}
