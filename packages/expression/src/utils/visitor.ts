@@ -10,7 +10,8 @@ import type { ObjectLiteralExpression } from '../parser/expression/object.js'
 import type { LambdaExpression }        from '../parser/expression/lambda.js'
 import type { ConditionalExpression }   from '../parser/expression/conditional.js'
 import type { NullishExpression }       from '../parser/expression/nullish.js'
-import type { ArrayLiteralExpression }  from '../parser/expression/array.js'
+import type { ArrayLiteralExpression }    from '../parser/expression/array.js'
+import type { TemplateLiteralExpression } from '../parser/expression/template.js'
 
 export interface ExpressionVisitor<T> {
   visitName(expr: NameExpression): T
@@ -25,6 +26,7 @@ export interface ExpressionVisitor<T> {
   visitConditional(expr: ConditionalExpression): T
   visitNullish(expr: NullishExpression): T
   visitArrayLiteral(expr: ArrayLiteralExpression): T
+  visitTemplateLiteral(expr: TemplateLiteralExpression): T
 }
 
 export function visit<T>(expr: Expression, visitor: ExpressionVisitor<T>): T {
@@ -40,7 +42,8 @@ export function visit<T>(expr: Expression, visitor: ExpressionVisitor<T>): T {
     case 'LambdaExpression':        return visitor.visitLambda(expr as LambdaExpression)
     case 'ConditionalExpression':   return visitor.visitConditional(expr as ConditionalExpression)
     case 'NullishExpression':       return visitor.visitNullish(expr as NullishExpression)
-    case 'ArrayLiteralExpression':  return visitor.visitArrayLiteral(expr as ArrayLiteralExpression)
+    case 'ArrayLiteralExpression':    return visitor.visitArrayLiteral(expr as ArrayLiteralExpression)
+    case 'TemplateLiteralExpression': return visitor.visitTemplateLiteral(expr as TemplateLiteralExpression)
     default: throw new Error(`Unknown expression kind: ${(expr as any).kind}`)
   }
 }

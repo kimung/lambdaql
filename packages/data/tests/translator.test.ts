@@ -3,6 +3,7 @@ import { from, insertInto, updateIn, deleteFrom } from '../src/queryable.js'
 import { snakeCaseNaming } from '../src/naming.js'
 import {
   ConstantExpression, MethodExpression, NameExpression, LambdaExpression, PropertyExpression,
+  TemplateLiteralExpression,
 } from '@gamn9/expression'
 
 type User = { id: number; name: string; age: number; active: boolean; deletedAt: string | null; email: string }
@@ -483,5 +484,40 @@ describe('NamingStrategy — snakeCaseNaming', () => {
     const { sql: withoutNaming } = from<User>('user').filter(u => u.age > 18).toSql()
     // 'age' n'a pas de majuscule → snake_case identique
     expect(withNaming).toBe(withoutNaming)
+  })
+})
+
+describe('Template literals', () => {
+  it('template sans interpolation → param unique', () => {
+    const { sql, params } = from<User>('user')
+      .select((_u: any) => ({ label: `hello` }))
+      .toSql()
+    expect(sql).toContain('$1 AS label')
+    expect(params).toEqual(['hello'])
+  })
+
+  it('template avec une interpolation → || (postgres)', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ label: `user: ${u.name}` }))
+      .toSql()
+    expect(sql).toContain('$1 || t0.name AS label')
+    expect(params[0]).toBe('user: ')
+  })
+
+  it('template → plusieurs interpolations', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ label: `[${u.id}] ${u.name}` }))
+      .toSql()
+    expect(sql).toContain('$1 || t0.id || $2 || t0.name AS label')
+    expect(params[0]).toBe('[')
+    expect(params[1]).toBe('] ')
+  })
+
+  it('template dans filter → SQL sécurisé (params, pas injection)', () => {
+    const { sql, params } = from<User>('user')
+      .filter((u: any) => u.name === `Kim`)
+      .toSql()
+    expect(sql).toContain('= $1')
+    expect(params[0]).toBe('Kim')
   })
 })

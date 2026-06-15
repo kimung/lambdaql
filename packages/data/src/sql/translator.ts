@@ -2,7 +2,7 @@ import type {
   Expression, LambdaExpression, NameExpression, ConstantExpression,
   BinaryExpression, UnaryExpression, PropertyExpression, MethodExpression,
   FieldExpression, ObjectLiteralExpression, ConditionalExpression, NullishExpression,
-  ArrayLiteralExpression,
+  ArrayLiteralExpression, TemplateLiteralExpression,
 } from '@gamn9/expression'
 import type { SelectExpression, JoinExpression } from '../expression/select.js'
 import type { RawExpression }                    from '../expression/raw.js'
@@ -222,6 +222,16 @@ export class SqlTranslator {
       case 'ArrayLiteralExpression': {
         const a = node as ArrayLiteralExpression
         return `(${a.elements.map(e => this.expr(e, aliases)).join(', ')})`
+      }
+
+      case 'TemplateLiteralExpression': {
+        const t = node as TemplateLiteralExpression
+        const parts: string[] = []
+        for (let i = 0; i < t.quasis.length; i++) {
+          if (t.quasis[i] !== '') parts.push(this.addParam(t.quasis[i]!))
+          if (i < t.expressions.length) parts.push(this.expr(t.expressions[i]!, aliases))
+        }
+        return parts.length === 1 ? parts[0]! : this.dialect.fn('concat', parts)
       }
 
       case 'MethodExpression': {

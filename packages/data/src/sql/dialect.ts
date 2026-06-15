@@ -1,5 +1,5 @@
 export type SqlFnName =
-  | 'mod' | 'coalesce' | 'length'
+  | 'mod' | 'coalesce' | 'length' | 'concat'
   | 'year' | 'month' | 'day' | 'dayofweek' | 'hour' | 'minute' | 'second'
   | 'floor' | 'ceil' | 'round' | 'abs'
 
@@ -33,6 +33,7 @@ function standardFn(name: SqlFnName, args: string[]): string {
     case 'ceil':      return `CEIL(${args[0]})`
     case 'round':     return `ROUND(${args[0]})`
     case 'abs':       return `ABS(${args[0]})`
+    case 'concat':    return args.join(' || ')
   }
 }
 
@@ -58,7 +59,10 @@ export const mysql: Dialect = {
     if (skip != null) return ` LIMIT 18446744073709551615 OFFSET ${skip}`
     return ''
   },
-  fn: standardFn,
+  fn(name, args) {
+    if (name === 'concat') return `CONCAT(${args.join(', ')})`
+    return standardFn(name, args)
+  },
   quoteIdent: (id) => `\`${id.replace(/`/g, '``')}\``,
 }
 

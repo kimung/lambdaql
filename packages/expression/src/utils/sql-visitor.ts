@@ -11,7 +11,8 @@ import type { ObjectLiteralExpression }  from '../parser/expression/object.js'
 import type { LambdaExpression }         from '../parser/expression/lambda.js'
 import type { ConditionalExpression }    from '../parser/expression/conditional.js'
 import type { NullishExpression }        from '../parser/expression/nullish.js'
-import type { ArrayLiteralExpression }   from '../parser/expression/array.js'
+import type { ArrayLiteralExpression }    from '../parser/expression/array.js'
+import type { TemplateLiteralExpression } from '../parser/expression/template.js'
 
 const SQL_OPS: Record<string, string> = {
   '&&': 'AND', '||': 'OR', '===': '=', '!==': '!=', '==': '=', '!=': '!=',
@@ -89,6 +90,15 @@ class SqlVisitor implements ExpressionVisitor<string> {
 
   visitArrayLiteral(expr: ArrayLiteralExpression): string {
     return `(${expr.elements.map(e => visit(e, this)).join(', ')})`
+  }
+
+  visitTemplateLiteral(expr: TemplateLiteralExpression): string {
+    const parts: string[] = []
+    for (let i = 0; i < expr.quasis.length; i++) {
+      if (expr.quasis[i]) parts.push(`'${expr.quasis[i]!.replace(/'/g, "''")}'`)
+      if (i < expr.expressions.length) parts.push(visit(expr.expressions[i]!, this))
+    }
+    return parts.length === 1 ? parts[0]! : parts.join(' || ')
   }
 }
 

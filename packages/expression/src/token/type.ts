@@ -35,6 +35,7 @@ export const TokenType = {
   INTEGER:    '<integer>',
   NULL:       '<null>',
   STRING:     '<string>',
+  TEMPLATE:   '<template>',
 } as const
 
 export type TokenTypeValue = typeof TokenType[keyof typeof TokenType]

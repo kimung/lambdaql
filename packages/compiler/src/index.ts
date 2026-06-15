@@ -116,6 +116,23 @@ function transformExpr(
   if (node.kind === ts.SyntaxKind.NullKeyword)
     return obj('ConstantExpression', [prop('value', ts.factory.createNull())])
 
+  // Template literal sans interpolation : `hello`
+  if (node.kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral) {
+    return obj('TemplateLiteralExpression', [
+      prop('quasis',      ts.factory.createArrayLiteralExpression([str((node as ts.NoSubstitutionTemplateLiteral).text)])),
+      prop('expressions', ts.factory.createArrayLiteralExpression([])),
+    ])
+  }
+  // Template literal avec interpolations : `hello ${x} world`
+  if (ts.isTemplateExpression(node)) {
+    const quasiExprs = [str(node.head.text), ...node.templateSpans.map(s => str(s.literal.text))]
+    const valueExprs = node.templateSpans.map(s => transformExpr(s.expression as ts.Expression, params, context))
+    return obj('TemplateLiteralExpression', [
+      prop('quasis',      ts.factory.createArrayLiteralExpression(quasiExprs)),
+      prop('expressions', ts.factory.createArrayLiteralExpression(valueExprs)),
+    ])
+  }
+
   // Binary  (u.age > 18, u.name === 'Kim', …)
   if (ts.isBinaryExpression(node)) {
     return obj('BinaryExpression', [

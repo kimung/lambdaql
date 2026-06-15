@@ -159,6 +159,30 @@ describe('Parser — LambdaExpression', () => {
     expect(m.args[0].operator).toBe('??')
   })
 
+  describe('template literals', () => {
+    it('parse un template sans interpolation', () => {
+      const ast = parse('u => `hello`') as any
+      expect(ast.body.kind).toBe('TemplateLiteralExpression')
+      expect(ast.body.quasis).toEqual(['hello'])
+      expect(ast.body.expressions).toHaveLength(0)
+    })
+
+    it('parse un template avec une interpolation', () => {
+      const ast = parse('u => `hello ${u.name} !`') as any
+      expect(ast.body.kind).toBe('TemplateLiteralExpression')
+      expect(ast.body.quasis).toEqual(['hello ', ' !'])
+      expect(ast.body.expressions).toHaveLength(1)
+      expect(ast.body.expressions[0].kind).toBe('PropertyExpression')
+    })
+
+    it('parse un template avec plusieurs interpolations', () => {
+      const ast = parse('(u, v) => `${u.name} et ${v.name}`') as any
+      expect(ast.body.kind).toBe('TemplateLiteralExpression')
+      expect(ast.body.quasis).toEqual(['', ' et ', ''])
+      expect(ast.body.expressions).toHaveLength(2)
+    })
+  })
+
   describe('précédence arithmétique > comparaison', () => {
     it('x < a + b → x < (a + b)', () => {
       const ast = parse('(x, a, b) => x < a + b') as any

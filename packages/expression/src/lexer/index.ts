@@ -38,6 +38,8 @@ export class Lexer {
       }
       case 'string':
         return new Token(TokenKind.String, value, TokenType.STRING, line, col)
+      case 'template':
+        return new Token(TokenKind.String, value, TokenType.TEMPLATE, line, col)
       case 'true':
         return new Token(TokenKind.Boolean, true, TokenType.BOOLEAN, line, col)
       case 'false':

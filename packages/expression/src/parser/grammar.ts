@@ -8,6 +8,7 @@ import { CallParselet }            from './parselet/call.js'
 import { ArrayParselet }           from './parselet/array.js'
 import { ObjectLiteralParselet }   from './parselet/object.js'
 import { ConditionalParselet }     from './parselet/conditional.js'
+import { TemplateParselet }        from './parselet/template.js'
 import { TokenType }               from '../token/type.js'
 
 export class Grammar {
@@ -20,6 +21,7 @@ export class Grammar {
     this.parselets.addPrefix(new ObjectLiteralParselet())
     this.parselets.addPrefix(new UnaryParselet(TokenType.BANG))
     this.parselets.addPrefix(new UnaryParselet(TokenType.MINUS))
+    this.parselets.addPrefix(new TemplateParselet())
 
     this.parselets.addInfix(new CallParselet())
     this.parselets.addInfix(new CallParselet(TokenType.OPTIONAL_CHAIN))

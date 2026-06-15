@@ -147,4 +147,28 @@ describe('Dialect — fonctions SQL portables', () => {
     const { sql } = from<User>('user').filter((u: any) => u.name.length > 3).toSql({ dialect: mysql })
     expect(sql).toContain('LENGTH(t0.name)')
   })
+
+  it('template literal → || (postgres)', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ label: `user: ${u.name}` }))
+      .toSql({ dialect: postgres })
+    expect(sql).toContain('$1 || t0.name AS label')
+    expect(params[0]).toBe('user: ')
+  })
+
+  it('template literal → || (sqlite)', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ label: `user: ${u.name}` }))
+      .toSql({ dialect: sqlite })
+    expect(sql).toContain('? || t0.name AS label')
+    expect(params[0]).toBe('user: ')
+  })
+
+  it('template literal → CONCAT() (mysql)', () => {
+    const { sql, params } = from<User>('user')
+      .select((u: any) => ({ label: `user: ${u.name}` }))
+      .toSql({ dialect: mysql })
+    expect(sql).toContain('CONCAT(?, t0.name) AS label')
+    expect(params[0]).toBe('user: ')
+  })
 })
