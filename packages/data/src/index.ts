@@ -1,4 +1,4 @@
-export { from, Queryable, insertInto, updateIn, deleteFrom, createDatabase } from './queryable.js'
+export { from, Queryable, insertInto, updateIn, deleteFrom, createDatabase, type Database } from './queryable.js'
 export { type Executor, type QueryContext } from './executor.js'
 export { SqlTranslator, type SqlResult }                     from './sql/translator.js'
 export { postgres, mysql, sqlite, type Dialect, type SqlFnName } from './sql/dialect.js'

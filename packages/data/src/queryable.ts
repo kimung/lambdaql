@@ -189,14 +189,34 @@ export class Queryable<T> {
 
 // ── createDatabase ───────────────────────────────────────────────────────────
 
+export interface Database {
+  from<T>(table: string): Queryable<T>
+  insertInto<T extends object>(table: string, record: T): Promise<void>
+  updateIn<T extends object>(table: string, record: Partial<T>, where?: (x: T) => boolean): Promise<void>
+  deleteFrom<T>(table: string, where: (x: T) => boolean): Promise<void>
+}
+
 export function createDatabase(
   executor: Executor,
   opts?: { naming?: NamingStrategy },
-): { from<T>(table: string): Queryable<T> } {
+): Database {
   const ctx: QueryContext = { executor, naming: opts?.naming }
+  const dmlOpts = { naming: opts?.naming, dialect: executor.dialect }
   return {
     from<T>(table: string): Queryable<T> {
       return new Queryable<T>(new SelectExpression(new SourceExpression(table)), ctx)
+    },
+    async insertInto<T extends object>(table: string, record: T): Promise<void> {
+      const { sql, params } = insertInto(table, record, dmlOpts)
+      await executor.query(sql, params)
+    },
+    async updateIn<T extends object>(table: string, record: Partial<T>, where?: (x: T) => boolean): Promise<void> {
+      const { sql, params } = updateIn(table, record, where, dmlOpts)
+      await executor.query(sql, params)
+    },
+    async deleteFrom<T>(table: string, where: (x: T) => boolean): Promise<void> {
+      const { sql, params } = deleteFrom(table, where, dmlOpts)
+      await executor.query(sql, params)
     },
   }
 }

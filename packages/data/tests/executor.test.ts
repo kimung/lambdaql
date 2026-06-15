@@ -123,3 +123,63 @@ describe('erreurs sans Executor', () => {
     await expect(from<User>('user').count()).rejects.toThrow('requires an Executor')
   })
 })
+
+describe('db.insertInto()', () => {
+  it('génère INSERT INTO et exécute via executor', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec)
+    await db.insertInto('user', { name: 'Alice', age: 30 })
+    expect(exec.query).toHaveBeenCalledWith(
+      'INSERT INTO user (name, age) VALUES (?, ?)',
+      ['Alice', 30],
+    )
+  })
+
+  it('applique la NamingStrategy du contexte', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec, { naming: (p) => p.toUpperCase() })
+    await db.insertInto('user', { firstName: 'Kim' })
+    const [sql] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!
+    expect(sql).toContain('FIRSTNAME')
+  })
+})
+
+describe('db.updateIn()', () => {
+  it('génère UPDATE … SET … et exécute via executor', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec)
+    await db.updateIn<User>('user', { name: 'Bob' }, (u) => u.id === 1)
+    const [sql, params] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!
+    expect(sql).toMatch(/^UPDATE user SET/)
+    expect(sql).toContain('WHERE')
+    expect(params).toContain('Bob')
+    expect(params).toContain(1)
+  })
+
+  it('fonctionne sans prédicat WHERE', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec)
+    await db.updateIn('user', { age: 0 })
+    const [sql] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!
+    expect(sql).not.toContain('WHERE')
+  })
+})
+
+describe('db.deleteFrom()', () => {
+  it('génère DELETE FROM … WHERE … et exécute via executor', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec)
+    await db.deleteFrom<User>('user', (u) => u.id === 42)
+    const [sql, params] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!
+    expect(sql).toMatch(/^DELETE FROM user WHERE/)
+    expect(params).toContain(42)
+  })
+
+  it('applique la NamingStrategy du contexte', async () => {
+    const exec = mockExecutor([])
+    const db = createDatabase(exec, { naming: (p) => p.toUpperCase() })
+    await db.deleteFrom<User>('user', (u) => u.id === 1)
+    const [sql] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!
+    expect(sql).toContain('ID')
+  })
+})

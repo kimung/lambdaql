@@ -84,7 +84,7 @@ export class SqlTranslator {
 
   translateInsert(expr: InsertExpression): SqlResult {
     this._params = []
-    const columns = expr.fields.map(f => f.name).join(', ')
+    const columns = expr.fields.map(f => this.naming(f.name)).join(', ')
     const values  = expr.fields
       .map(f => this.addParam((f.assignment as ConstantExpression).value))
       .join(', ')
@@ -97,7 +97,7 @@ export class SqlTranslator {
   translateUpdate(expr: UpdateExpression): SqlResult {
     this._params = []
     const set = expr.fields
-      .map(f => `${f.name} = ${this.addParam((f.assignment as ConstantExpression).value)}`)
+      .map(f => `${this.naming(f.name)} = ${this.addParam((f.assignment as ConstantExpression).value)}`)
       .join(', ')
     const where = expr.where
       ? ` WHERE ${this.dmlCondition(expr.where)}`
