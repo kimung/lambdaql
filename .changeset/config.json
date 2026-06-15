@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@2.0.0/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [],
+  "linked": [
+    ["@gamn9/expression", "@gamn9/data", "@gamn9/compiler", "@gamn9/mikro-orm", "@gamn9/pg", "@gamn9/sqlite"]
+  ],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

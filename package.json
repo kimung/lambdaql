@@ -1,10 +1,16 @@
 {
   "name": "@gamn9/monorepo",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "examples/*"],
   "scripts": {
-    "build":     "npm run build --workspaces --if-present",
+    "build":     "npm run build -w @gamn9/expression && npm run build -w @gamn9/data && npm run build -w @gamn9/compiler -w @gamn9/mikro-orm -w @gamn9/pg -w @gamn9/sqlite",
     "test":      "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "version":   "changeset version",
+    "release":   "changeset publish --provenance"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "tsx": "^4.19.0"
   }
 }
