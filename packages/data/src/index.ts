@@ -1,4 +1,13 @@
-export { from, Queryable, insertInto, updateIn, deleteFrom, createDatabase, type Database } from "./queryable.js";
+export {
+  from,
+  Queryable,
+  insertInto,
+  updateIn,
+  deleteFrom,
+  createDatabase,
+  type Database,
+  type TransactionalDatabase,
+} from "./queryable.js";
 export type {
   SqlNumber,
   SqlString,
@@ -8,7 +17,7 @@ export type {
   SqlWindowSpec,
   SqlAggResult,
 } from "./types/sql-types.js";
-export { type Executor, type QueryContext } from "./executor.js";
+export { type Executor, type TransactionalExecutor, type QueryContext } from "./executor.js";
 export { SqlTranslator, type SqlResult } from "./sql/translator.js";
 export { postgres, mysql, sqlite, type Dialect, type SqlFnName } from "./sql/dialect.js";
 export { identityNaming, snakeCaseNaming, type NamingStrategy } from "./naming.js";

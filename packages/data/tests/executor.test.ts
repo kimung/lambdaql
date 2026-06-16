@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createDatabase, from } from "../src/queryable.js";
 import { sqlite } from "../src/sql/dialect.js";
-import type { Executor } from "../src/executor.js";
+import type { Executor, TransactionalExecutor } from "../src/executor.js";
 
 type User = { id: number; name: string; age: number };
 
@@ -195,5 +195,71 @@ describe("db.deleteFrom()", () => {
     await db.deleteFrom<User>("user", (u) => u.id === 1);
     const [sql] = (exec.query as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(sql).toContain("ID");
+  });
+});
+
+describe("createDatabase avec TransactionalExecutor", () => {
+  function mockTransactionalExecutor(): TransactionalExecutor {
+    return {
+      dialect: sqlite,
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      transaction: vi.fn(async <R>(cb: (exec: Executor) => Promise<R>) => {
+        const innerExec: Executor = { dialect: sqlite, query: vi.fn().mockResolvedValue({ rows: [] }) };
+        return cb(innerExec);
+      }),
+    };
+  }
+
+  it("retourne un objet avec transaction() si l'executor est transactionnel", () => {
+    const exec = mockTransactionalExecutor();
+    const db = createDatabase(exec);
+    expect(typeof db.transaction).toBe("function");
+  });
+
+  it("retourne un Database sans transaction() si l'executor est simple", () => {
+    const exec = mockExecutor([]);
+    const db = createDatabase(exec);
+    expect("transaction" in db).toBe(false);
+  });
+
+  it("transaction() délègue à l'executor", async () => {
+    const exec = mockTransactionalExecutor();
+    const db = createDatabase(exec);
+    await db.transaction(async () => {});
+    expect(exec.transaction).toHaveBeenCalledOnce();
+  });
+
+  it("le callback reçoit un Database sans transaction() (pas d'imbrication)", async () => {
+    const exec = mockTransactionalExecutor();
+    const db = createDatabase(exec);
+    let innerHasTransaction = false;
+    await db.transaction(async (tx) => {
+      innerHasTransaction = "transaction" in tx;
+    });
+    expect(innerHasTransaction).toBe(false);
+  });
+
+  it("la NamingStrategy est héritée dans la transaction", async () => {
+    const naming = (p: string) => p.toUpperCase();
+    let capturedSql = "";
+    const exec: TransactionalExecutor = {
+      dialect: sqlite,
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      async transaction<R>(cb: (exec: Executor) => Promise<R>) {
+        const innerExec: Executor = {
+          dialect: sqlite,
+          query: vi.fn().mockImplementation(async (sql: string) => {
+            capturedSql = sql;
+            return { rows: [] };
+          }),
+        };
+        return cb(innerExec);
+      },
+    };
+    const db = createDatabase(exec, { naming });
+    await db.transaction(async (tx) => {
+      await tx.insertInto("user", { firstName: "Kim" });
+    });
+    expect(capturedSql).toContain("FIRSTNAME");
   });
 });

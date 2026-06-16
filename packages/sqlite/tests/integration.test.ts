@@ -174,3 +174,43 @@ describe("Integration SQLite — any()", () => {
     ).toBe(false);
   });
 });
+
+describe("Integration SQLite — transaction()", () => {
+  it("commit : les insertions sont visibles après la transaction", async () => {
+    const q = createDatabase(createSqliteExecutor(db));
+    await q.transaction(async (tx) => {
+      await tx.insertInto("user", { id: 10, name: "Tx1", age: 20, email: null });
+      await tx.insertInto("user", { id: 11, name: "Tx2", age: 21, email: null });
+    });
+    const users = await q
+      .from<User>("user")
+      .filter((u) => u.id >= 10)
+      .toArray();
+    expect(users).toHaveLength(2);
+    await q.deleteFrom<User>("user", (u) => u.id >= 10);
+  });
+
+  it("rollback : aucune insertion n'est persistée si le callback lève", async () => {
+    const q = createDatabase(createSqliteExecutor(db));
+    await expect(
+      q.transaction(async (tx) => {
+        await tx.insertInto("user", { id: 20, name: "Rollback", age: 99, email: null });
+        throw new Error("intentional rollback");
+      }),
+    ).rejects.toThrow("intentional rollback");
+    const user = await q
+      .from<User>("user")
+      .filter((u) => u.id === 20)
+      .firstOrDefault();
+    expect(user).toBeUndefined();
+  });
+
+  it("le callback reçoit un Database sans transaction() (pas d'imbrication)", async () => {
+    const q = createDatabase(createSqliteExecutor(db));
+    let innerHasTransaction = false;
+    await q.transaction(async (tx) => {
+      innerHasTransaction = "transaction" in tx;
+    });
+    expect(innerHasTransaction).toBe(false);
+  });
+});

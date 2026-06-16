@@ -1,7 +1,7 @@
 import { expression, ConstantExpression, FieldExpression, type LambdaExpression } from "@gamn9/expression";
 import { type NamingStrategy } from "./naming.js";
 import { type Dialect } from "./sql/dialect.js";
-import { type Executor, type QueryContext } from "./executor.js";
+import { type Executor, type TransactionalExecutor, type QueryContext } from "./executor.js";
 import { type SqlRow } from "./types/sql-types.js";
 import { RawExpression } from "./expression/raw.js";
 import { CteExpression } from "./expression/cte.js";
@@ -234,10 +234,20 @@ export interface Database {
   deleteFrom<T>(table: string, where: (x: T) => boolean): Promise<void>;
 }
 
+export interface TransactionalDatabase extends Database {
+  transaction<R>(cb: (db: Database) => Promise<R>): Promise<R>;
+}
+
+export function createDatabase(
+  executor: TransactionalExecutor,
+  opts?: { naming?: NamingStrategy },
+): TransactionalDatabase;
+export function createDatabase(executor: Executor, opts?: { naming?: NamingStrategy }): Database;
 export function createDatabase(executor: Executor, opts?: { naming?: NamingStrategy }): Database {
   const ctx: QueryContext = { executor, naming: opts?.naming };
   const dmlOpts = { naming: opts?.naming, dialect: executor.dialect };
-  return {
+
+  const base: Database = {
     from<T>(table: string): Queryable<T> {
       return new Queryable<T>(new SelectExpression(new SourceExpression(table)), ctx);
     },
@@ -254,6 +264,19 @@ export function createDatabase(executor: Executor, opts?: { naming?: NamingStrat
       await executor.query(sql, params);
     },
   };
+
+  if ("transaction" in executor && typeof (executor as TransactionalExecutor).transaction === "function") {
+    const txExec = executor as TransactionalExecutor;
+    const txDb: TransactionalDatabase = {
+      ...base,
+      transaction<R>(cb: (db: Database) => Promise<R>): Promise<R> {
+        return txExec.transaction((innerExec: Executor) => cb(createDatabase(innerExec, opts)));
+      },
+    };
+    return txDb;
+  }
+
+  return base;
 }
 
 // ── Helpers DML ──────────────────────────────────────────────────────────────

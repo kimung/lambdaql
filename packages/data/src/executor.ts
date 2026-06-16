@@ -6,6 +6,10 @@ export interface Executor {
   query(sql: string, params: unknown[]): Promise<{ rows: unknown[] }>;
 }
 
+export interface TransactionalExecutor extends Executor {
+  transaction<R>(cb: (exec: Executor) => Promise<R>): Promise<R>;
+}
+
 export interface QueryContext {
   readonly executor: Executor;
   readonly naming?: NamingStrategy;

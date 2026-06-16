@@ -1,13 +1,33 @@
-import type { Database } from "better-sqlite3";
-import { sqlite, type Executor } from "@gamn9/data";
+import type { Database as Sqlite3Db } from "better-sqlite3";
+import { sqlite, type Executor, type TransactionalExecutor } from "@gamn9/data";
 
-export function createSqliteExecutor(db: Database): Executor {
+function execQuery(db: Sqlite3Db, sql: string, params: unknown[]): { rows: unknown[] } {
+  const stmt = db.prepare(sql);
+  const rows = stmt.reader ? stmt.all(params as any[]) : (stmt.run(params as any[]), []);
+  return { rows };
+}
+
+export function createSqliteExecutor(db: Sqlite3Db): TransactionalExecutor {
   return {
     dialect: sqlite,
     query(sql: string, params: unknown[]) {
-      // better-sqlite3 est synchrone — on enveloppe dans une Promise
-      const rows = db.prepare(sql).all(params as any[]);
-      return Promise.resolve({ rows });
+      return Promise.resolve(execQuery(db, sql, params));
+    },
+    async transaction<R>(cb: (exec: Executor) => Promise<R>): Promise<R> {
+      db.exec("BEGIN");
+      try {
+        const result = await cb({
+          dialect: sqlite,
+          query(sql: string, params: unknown[]) {
+            return Promise.resolve(execQuery(db, sql, params));
+          },
+        });
+        db.exec("COMMIT");
+        return result;
+      } catch (e) {
+        db.exec("ROLLBACK");
+        throw e;
+      }
     },
   };
 }
