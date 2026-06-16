@@ -2,6 +2,7 @@ import { expression, ConstantExpression, FieldExpression, type LambdaExpression 
 import { type NamingStrategy } from "./naming.js";
 import { type Dialect } from "./sql/dialect.js";
 import { type Executor, type QueryContext } from "./executor.js";
+import { type SqlRow } from "./types/sql-types.js";
 import { RawExpression } from "./expression/raw.js";
 import { CteExpression } from "./expression/cte.js";
 import { SourceExpression } from "./expression/source.js";
@@ -13,7 +14,7 @@ import { UpdateExpression } from "./expression/update.js";
 import { DeleteExpression } from "./expression/delete.js";
 import { SqlTranslator, type SqlResult } from "./sql/translator.js";
 
-type Fn<T> = (x: T, ...rest: any[]) => unknown;
+type Fn<T> = (x: SqlRow<T>, ...rest: any[]) => unknown;
 type FnOrExpr<T> = Fn<T> | LambdaExpression;
 
 function resolve<T>(v: FnOrExpr<T>): LambdaExpression {

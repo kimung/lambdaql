@@ -13,7 +13,7 @@ type Employee = {
 describe("Window functions — OVER ()", () => {
   it("RANK() OVER (PARTITION BY … ORDER BY …)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({
+      .select((e) => ({
         name: e.name,
         rang: e.salary.rank().over({ partitionBy: e.dept, orderBy: e.salary }),
       }))
@@ -26,7 +26,7 @@ describe("Window functions — OVER ()", () => {
 
   it("DENSE_RANK() OVER (ORDER BY …)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ rang: e.salary.denseRank().over({ orderBy: e.salary }) }))
+      .select((e) => ({ rang: e.salary.denseRank().over({ orderBy: e.salary }) }))
       .toSql();
 
     expect(sql).toContain("DENSE_RANK() OVER (ORDER BY t0.salary ASC)");
@@ -34,7 +34,7 @@ describe("Window functions — OVER ()", () => {
 
   it("ROW_NUMBER() OVER (PARTITION BY … ORDER BY … DESC)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ rn: e.id.rowNumber().over({ partitionBy: e.dept, orderByDesc: e.salary }) }))
+      .select((e) => ({ rn: e.id.rowNumber().over({ partitionBy: e.dept, orderByDesc: e.salary }) }))
       .toSql();
 
     expect(sql).toContain("ROW_NUMBER() OVER (PARTITION BY t0.dept ORDER BY t0.salary DESC)");
@@ -42,7 +42,7 @@ describe("Window functions — OVER ()", () => {
 
   it("AVG(col) OVER (PARTITION BY …)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ avgSalary: e.salary.avg().over({ partitionBy: e.dept }) }))
+      .select((e) => ({ avgSalary: e.salary.avg().over({ partitionBy: e.dept }) }))
       .toSql();
 
     expect(sql).toContain("AVG(t0.salary) OVER (PARTITION BY t0.dept)");
@@ -50,7 +50,7 @@ describe("Window functions — OVER ()", () => {
 
   it("SUM(col) OVER (ORDER BY …)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ cumul: e.salary.sum().over({ orderBy: e.hiredAt }) }))
+      .select((e) => ({ cumul: e.salary.sum().over({ orderBy: e.hiredAt }) }))
       .toSql();
 
     expect(sql).toContain("SUM(t0.salary) OVER (ORDER BY t0.hiredAt ASC)");
@@ -58,7 +58,7 @@ describe("Window functions — OVER ()", () => {
 
   it("COUNT(*) OVER (PARTITION BY …) quand le contexte est le paramètre lambda", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ total: e.count().over({ partitionBy: e.dept }) }))
+      .select((e) => ({ total: e.count().over({ partitionBy: e.dept }) }))
       .toSql();
 
     expect(sql).toContain("COUNT(*) OVER (PARTITION BY t0.dept)");
@@ -66,7 +66,7 @@ describe("Window functions — OVER ()", () => {
 
   it("MAX(col) OVER (PARTITION BY …)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ maxSal: e.salary.max().over({ partitionBy: e.dept }) }))
+      .select((e) => ({ maxSal: e.salary.max().over({ partitionBy: e.dept }) }))
       .toSql();
 
     expect(sql).toContain("MAX(t0.salary) OVER (PARTITION BY t0.dept)");
@@ -74,7 +74,7 @@ describe("Window functions — OVER ()", () => {
 
   it("PARTITION BY avec plusieurs colonnes (array)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({
+      .select((e) => ({
         rang: e.salary.rank().over({ partitionBy: [e.dept, e.region], orderBy: e.salary }),
       }))
       .toSql();
@@ -84,7 +84,7 @@ describe("Window functions — OVER ()", () => {
 
   it("ORDER BY avec plusieurs colonnes (array)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ rn: e.id.rowNumber().over({ orderBy: [e.dept, e.salary] }) }))
+      .select((e) => ({ rn: e.id.rowNumber().over({ orderBy: [e.dept, e.salary] }) }))
       .toSql();
 
     expect(sql).toContain("ORDER BY t0.dept, t0.salary ASC");
@@ -92,7 +92,7 @@ describe("Window functions — OVER ()", () => {
 
   it("OVER () vide (ni partitionBy ni orderBy)", () => {
     const { sql } = from<Employee>("employee")
-      .select((e: any) => ({ rn: e.id.rowNumber().over({}) }))
+      .select((e) => ({ rn: e.id.rowNumber().over({}) }))
       .toSql();
 
     expect(sql).toContain("ROW_NUMBER() OVER ()");
@@ -101,7 +101,7 @@ describe("Window functions — OVER ()", () => {
   it("combiné avec WHERE sur la même requête", () => {
     const { sql, params } = from<Employee>("employee")
       .filter((e) => e.dept === "tech")
-      .select((e: any) => ({
+      .select((e) => ({
         name: e.name,
         rang: e.salary.rank().over({ partitionBy: e.dept, orderBy: e.salary }),
       }))
