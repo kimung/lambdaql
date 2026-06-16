@@ -66,7 +66,7 @@ Dépend de `@gamn9/expression` pour le parsing des lambdas.
 - Les prédicats de JOIN utilisent `joinAliasMap(predicate, idx)` : le dernier argument désigne la table jointe (`t{idx}`), le premier la source (`t0`). Ne pas utiliser `aliasMap()` pour les JOINs — le mapping positionnel naïf produit des alias faux dès le 2ᵉ join.
 - `columns()` gère les projections scalaires (`select(u => u.name)`) et objet (`select(u => ({ id: u.id }))`)
 
-**Helpers DML** : `insertInto`, `updateIn`, `deleteFrom` dans `src/queryable.ts` — construisent les expressions depuis des objets plain et délèguent au `SqlTranslator`. Ces helpers n'acceptent pas de `NamingStrategy` (les colonnes sont prises telles quelles depuis les clés de l'objet).
+**Helpers DML** : `insertInto`, `updateIn`, `deleteFrom` dans `src/queryable.ts` — construisent les expressions depuis des objets plain et délèguent au `SqlTranslator`. Acceptent `options?: { naming?: NamingStrategy; dialect?: Dialect }` — la `NamingStrategy` s'applique aux noms de colonnes issus des clés de l'objet.
 
 ## Architecture — @gamn9/compiler
 
