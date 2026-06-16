@@ -1,0 +1,73 @@
+{
+  "name": "@gamn9/unplugin",
+  "version": "1.0.0",
+  "description": "Vite/esbuild/Rollup/webpack plugin for @gamn9 — transforms lambdas to AST at build time",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gamn9/gamn9",
+    "directory": "packages/unplugin"
+  },
+  "keywords": [
+    "query-builder",
+    "vite",
+    "esbuild",
+    "rollup",
+    "webpack",
+    "plugin",
+    "typescript",
+    "linq"
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./vite": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./rollup": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./esbuild": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./webpack": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "magic-string": "^0.30.0",
+    "unplugin": "^2.3.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
