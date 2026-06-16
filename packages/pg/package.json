@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gamn9/gamn9",
+    "url": "https://github.com/kimung/lambdaql",
     "directory": "packages/pg"
   },
   "keywords": [

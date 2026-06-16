@@ -13,7 +13,10 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "version": "changeset version",
-    "release": "changeset publish --provenance"
+    "release": "changeset publish --provenance",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "lint-staged": {
     "**/*.ts": [
@@ -32,6 +35,7 @@
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.4",
     "tsx": "^4.19.0",
-    "typescript-eslint": "^8.61.1"
+    "typescript-eslint": "^8.61.1",
+    "vitepress": "^1.6.3"
   }
 }
