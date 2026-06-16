@@ -14,6 +14,11 @@ export class LambdaParselet implements InfixParselet {
   }
   parse(parser: Parser, left: Expression, _token: Token): LambdaExpression {
     const args = (Array.isArray(left) ? left : [left]) as NameExpression[];
+    for (const arg of args) {
+      if (arg.kind !== "NameExpression") {
+        throw new Error(`Lambda parameter must be a NameExpression, got ${arg.kind}`);
+      }
+    }
     return new LambdaExpression(parser.expression(0), args);
   }
 }

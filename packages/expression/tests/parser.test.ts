@@ -208,4 +208,8 @@ describe("Parser — LambdaExpression", () => {
       expect(ast.body.left.operator).toBe("<");
     });
   });
+
+  it("throws on non-identifier lambda parameter", () => {
+    expect(() => parse("(u, 1) => u.id")).toThrow("Lambda parameter must be a NameExpression, got ConstantExpression");
+  });
 });
