@@ -8,13 +8,15 @@ At compile time, arrow functions passed to `Queryable` methods (`filter`, `selec
 
 ```ts
 // Source
-from<User>('user').filter(u => u.age > minAge)
+from<User>("user").filter((u) => u.age > minAge);
 
 // After AOT compilation (conceptually)
-from<User>('user').filter(new LambdaExpression(
-  new BinaryExpression(new PropertyExpression(new NameExpression('u'), 'age'), '>', new ConstantExpression(minAge)),
-  [new NameExpression('u')],
-))
+from<User>("user").filter(
+  new LambdaExpression(
+    new BinaryExpression(new PropertyExpression(new NameExpression("u"), "age"), ">", new ConstantExpression(minAge)),
+    [new NameExpression("u")],
+  ),
+);
 ```
 
 ## Setup
@@ -31,9 +33,7 @@ Add the transformer to your `tsconfig.json`:
 ```json
 {
   "compilerOptions": {
-    "plugins": [
-      { "transform": "@gamn9/compiler" }
-    ]
+    "plugins": [{ "transform": "@gamn9/compiler" }]
   }
 }
 ```
@@ -47,8 +47,8 @@ When a real `ts.Program` with TypeChecker is not available (e.g. `transpileModul
 External variables are captured as live references:
 
 ```ts
-const ids = [1, 2, 3]
-from<User>('user').filter(u => ids.includes(u.id))
+const ids = [1, 2, 3];
+from<User>("user").filter((u) => ids.includes(u.id));
 // → u.id IN ($1, $2, $3)  — ids is read at query execution time
 ```
 

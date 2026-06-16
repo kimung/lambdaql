@@ -5,9 +5,7 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "outDir": "dist",
-    "plugins": [
-      { "transform": "@gamn9/compiler" }
-    ]
+    "plugins": [{ "transform": "@gamn9/compiler" }]
   },
   "include": ["index.ts"]
 }

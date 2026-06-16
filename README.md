@@ -4,10 +4,10 @@ Monorepo TypeScript — parse des arrow functions JavaScript en AST typés et le
 
 ## Packages
 
-| Package | Description |
-|---|---|
+| Package                                      | Description                                                   |
+| -------------------------------------------- | ------------------------------------------------------------- |
 | [`@gamn9/expression`](./packages/expression) | Parse des arrow functions en AST typés (lexer + parser Pratt) |
-| [`@gamn9/data`](./packages/data) | Query builder SQL fluent construit sur `@gamn9/expression` |
+| [`@gamn9/data`](./packages/data)             | Query builder SQL fluent construit sur `@gamn9/expression`    |
 
 ## Démarrage rapide
 

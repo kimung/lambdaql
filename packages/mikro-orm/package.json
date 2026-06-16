@@ -8,20 +8,35 @@
     "url": "https://github.com/gamn9/gamn9",
     "directory": "packages/mikro-orm"
   },
-  "keywords": ["query-builder", "sql", "typescript", "mikro-orm", "linq"],
+  "keywords": [
+    "query-builder",
+    "sql",
+    "typescript",
+    "mikro-orm",
+    "linq"
+  ],
   "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build":     "tsc",
-    "test":      "vitest run",
+    "build": "tsc",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {

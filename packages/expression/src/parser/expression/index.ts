@@ -1,3 +1,3 @@
 export abstract class Expression {
-  abstract readonly kind: string
+  abstract readonly kind: string;
 }

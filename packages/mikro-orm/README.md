@@ -13,17 +13,17 @@ npm install @gamn9/mikro-orm @gamn9/data
 ## Usage
 
 ```ts
-import { applyQueryable } from '@gamn9/mikro-orm'
-import { from } from '@gamn9/data'
+import { applyQueryable } from "@gamn9/mikro-orm";
+import { from } from "@gamn9/data";
 
-const query = from<User>('user')
-  .filter(u => u.active && u.age >= 18)
-  .orderBy(u => u.name)
-  .take(20)
+const query = from<User>("user")
+  .filter((u) => u.active && u.age >= 18)
+  .orderBy((u) => u.name)
+  .take(20);
 
-const qb = em.createQueryBuilder(User)
-applyQueryable(qb, query)
-const users = await qb.getResult()
+const qb = em.createQueryBuilder(User);
+applyQueryable(qb, query);
+const users = await qb.getResult();
 ```
 
 ## Options
@@ -31,10 +31,10 @@ const users = await qb.getResult()
 ```ts
 applyQueryable(qb, query, {
   // Override the entity metadata used for auto-join and naming
-  entityMeta: orm.getMetadata().get('User'),
+  entityMeta: orm.getMetadata().get("User"),
   // Alias overrides for joined relations ({ [relationName]: qbAlias })
-  aliasOverrides: { company: 'c' },
-})
+  aliasOverrides: { company: "c" },
+});
 ```
 
 ## Auto-join
@@ -42,7 +42,7 @@ applyQueryable(qb, query, {
 Navigation chains in lambdas are automatically joined via `leftJoin`:
 
 ```ts
-from<User>('user').filter(u => u.company.country.name === 'FR')
+from<User>("user").filter((u) => u.company.country.name === "FR");
 // → LEFT JOIN company ON ... LEFT JOIN country ON ...
 ```
 
@@ -53,10 +53,10 @@ Requires MikroORM entity metadata to be available (i.e. `orm.getMetadata()`).
 Column names are derived from MikroORM's own naming strategy, with priority given to explicit `@Property({ fieldName })` overrides:
 
 ```ts
-import { createNamingFromMikroOrm } from '@gamn9/mikro-orm'
+import { createNamingFromMikroOrm } from "@gamn9/mikro-orm";
 
-const naming = createNamingFromMikroOrm(orm, userMeta)
-applyQueryable(qb, query, { naming })
+const naming = createNamingFromMikroOrm(orm, userMeta);
+applyQueryable(qb, query, { naming });
 ```
 
 ## Parameters

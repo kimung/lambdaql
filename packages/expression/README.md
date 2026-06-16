@@ -11,13 +11,13 @@ npm install @gamn9/expression
 ## Usage
 
 ```ts
-import { expression, toSql } from '@gamn9/expression'
+import { expression, toSql } from "@gamn9/expression";
 
 // Parse une lambda en AST
-const ast = expression.lambda.parse((user: User) => user.age >= 21 && !user.deleted)
+const ast = expression.lambda.parse((user: User) => user.age >= 21 && !user.deleted);
 
 // Traduit l'AST en clause SQL (sans paramètres préparés — voir @gamn9/data pour la prod)
-const where = toSql(ast, 'user')
+const where = toSql(ast, "user");
 // → "(age >= 21) AND NOT (deleted)"
 ```
 
@@ -45,30 +45,34 @@ Arrow function
 
 ## Nœuds AST
 
-| Nœud | Description |
-|---|---|
-| `NameExpression` | Identifiant (`user`, `x`) |
-| `ConstantExpression` | Littéral (`21`, `'active'`, `true`, `null`) |
-| `BinaryExpression` | Opérateur binaire (`&&`, `\|\|`, `>=`, `+`, …) |
-| `UnaryExpression` | Opérateur unaire (`!`, `-`) |
-| `PropertyExpression` | Accès propriété (`user.age`) |
-| `MethodExpression` | Appel de méthode (`email.includes('@')`) |
-| `ObjectLiteralExpression` | Projection objet (`{ id: u.id }`) |
-| `FieldExpression` | Champ d'un objet littéral |
-| `LambdaExpression` | Nœud racine — args + corps |
-| `ConditionalExpression` | Ternaire (`condition ? a : b`) |
-| `NullishExpression` | Coalescence nulle (`a ?? b`) |
+| Nœud                      | Description                                    |
+| ------------------------- | ---------------------------------------------- |
+| `NameExpression`          | Identifiant (`user`, `x`)                      |
+| `ConstantExpression`      | Littéral (`21`, `'active'`, `true`, `null`)    |
+| `BinaryExpression`        | Opérateur binaire (`&&`, `\|\|`, `>=`, `+`, …) |
+| `UnaryExpression`         | Opérateur unaire (`!`, `-`)                    |
+| `PropertyExpression`      | Accès propriété (`user.age`)                   |
+| `MethodExpression`        | Appel de méthode (`email.includes('@')`)       |
+| `ObjectLiteralExpression` | Projection objet (`{ id: u.id }`)              |
+| `FieldExpression`         | Champ d'un objet littéral                      |
+| `LambdaExpression`        | Nœud racine — args + corps                     |
+| `ConditionalExpression`   | Ternaire (`condition ? a : b`)                 |
+| `NullishExpression`       | Coalescence nulle (`a ?? b`)                   |
 
 ## Implémenter son propre visitor
 
 ```ts
-import { visit, type ExpressionVisitor } from '@gamn9/expression'
+import { visit, type ExpressionVisitor } from "@gamn9/expression";
 
 class MyVisitor implements ExpressionVisitor<string> {
-  visitName(expr)     { return expr.name }
-  visitConstant(expr) { return String(expr.value) }
-  visitBinary(expr)   {
-    return `${visit(expr.left, this)} ${expr.operator} ${visit(expr.right, this)}`
+  visitName(expr) {
+    return expr.name;
+  }
+  visitConstant(expr) {
+    return String(expr.value);
+  }
+  visitBinary(expr) {
+    return `${visit(expr.left, this)} ${expr.operator} ${visit(expr.right, this)}`;
   }
   // … implémenter toutes les méthodes
 }
@@ -76,16 +80,16 @@ class MyVisitor implements ExpressionVisitor<string> {
 
 ## Précédences des opérateurs
 
-| Groupe | Opérateurs | Précédence |
-|---|---|---|
-| Lambda | `=>` | 150 |
-| Appel / accès | `()` `.` | 100 |
-| Multiplicatif | `*` `/` `%` | 70 |
-| Additif | `+` `-` | 60 |
-| Comparaison | `===` `!==` `==` `!=` `<` `<=` `>` `>=` | 90 |
-| AND logique | `&&` | 35 |
-| OR logique | `\|\|` | 30 |
-| Coalescence nulle | `??` | 25 |
+| Groupe            | Opérateurs                              | Précédence |
+| ----------------- | --------------------------------------- | ---------- |
+| Lambda            | `=>`                                    | 150        |
+| Appel / accès     | `()` `.`                                | 100        |
+| Multiplicatif     | `*` `/` `%`                             | 70         |
+| Additif           | `+` `-`                                 | 60         |
+| Comparaison       | `===` `!==` `==` `!=` `<` `<=` `>` `>=` | 90         |
+| AND logique       | `&&`                                    | 35         |
+| OR logique        | `\|\|`                                  | 30         |
+| Coalescence nulle | `??`                                    | 25         |
 
 ## Licence
 

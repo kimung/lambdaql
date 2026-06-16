@@ -58,6 +58,7 @@ Dépend de `@gamn9/expression` pour le parsing des lambdas.
 **`SelectExpression`** (`src/expression/select.ts`) : accumule `where[]` (chaque `.filter()` ajoute une lambda), `joins[]`, `orders[]`, etc. `patch()` retourne une copie avec les champs overridés.
 
 **`SqlTranslator`** (`src/sql/translator.ts`) : stateful — `_params[]` accumule les valeurs, `_aliases[]` = `['t0', 't1', ...]` (source + joins dans l'ordre). Règles importantes :
+
 - Toutes les constantes (sauf `NULL`) → paramètres préparés `$1`, `$2`, …
 - `=== null` / `== null` → `IS NULL` ; `!== null` / `!= null` → `IS NOT NULL`
 - `PropertyExpression` avec alias `''` (DML) → nom de colonne nu ; avec alias `'t0'` (SELECT) → `t0.column`

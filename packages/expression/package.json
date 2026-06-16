@@ -8,26 +8,44 @@
     "url": "https://github.com/gamn9/gamn9",
     "directory": "packages/expression"
   },
-  "keywords": ["query-builder", "sql", "typescript", "ast", "parser", "linq"],
+  "keywords": [
+    "query-builder",
+    "sql",
+    "typescript",
+    "ast",
+    "parser",
+    "linq"
+  ],
   "sideEffects": false,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" },
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build":     "tsc",
-    "test":      "vitest run",
+    "build": "tsc",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": { "acorn": "^8.14.0" },
+  "dependencies": {
+    "acorn": "^8.14.0"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "typescript":  "^5.7.0",
-    "vitest":      "^2.1.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }

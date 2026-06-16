@@ -1,9 +1,9 @@
-import type { TokenKind } from './kind.js'
+import type { TokenKind } from "./kind.js";
 
 export interface IToken {
-  readonly kind: TokenKind
-  readonly value: unknown
-  readonly key: string
+  readonly kind: TokenKind;
+  readonly value: unknown;
+  readonly key: string;
 }
 
 export class Token implements IToken {
@@ -16,10 +16,10 @@ export class Token implements IToken {
   ) {}
 
   loc(): string {
-    return this.line != null ? ` at ${this.line}:${this.col}` : ''
+    return this.line != null ? ` at ${this.line}:${this.col}` : "";
   }
 
   toString(): string {
-    return `Token(${this.kind}, ${String(this.value)})`
+    return `Token(${this.kind}, ${String(this.value)})`;
   }
 }

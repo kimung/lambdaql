@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "prepare": "ts-patch install -s",
-    "build":   "tsc",
-    "start":   "npm run build && node dist/index.js"
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js"
   },
   "dependencies": {
     "@gamn9/compiler": "*",
