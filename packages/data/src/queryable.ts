@@ -1,4 +1,4 @@
-import { expression, ConstantExpression, FieldExpression, type LambdaExpression } from "@gamn9/expression";
+import { expression, ConstantExpression, FieldExpression, type LambdaExpression } from "@lambdaql/expression";
 import { type NamingStrategy } from "./naming.js";
 import { type Dialect } from "./sql/dialect.js";
 import { type Executor, type TransactionalExecutor, type QueryContext } from "./executor.js";
@@ -28,7 +28,7 @@ function resolve<T>(v: FnOrExpr<T>): LambdaExpression {
       _runtimeWarnIssued = true;
       console.warn(
         "[gamn9] AOT compiler inactive: lambda closures are not supported in runtime mode. " +
-          "Configure @gamn9/compiler (ts-patch transformer) to enable closure capture.",
+          "Configure @lambdaql/compiler (ts-patch transformer) to enable closure capture.",
       );
     }
     return expression.lambda.parse(v as Fn<unknown>);

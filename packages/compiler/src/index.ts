@@ -13,7 +13,7 @@ const JOIN_METHODS = new Set(["join", "leftJoin"]);
 export default function (program: ts.Program): ts.TransformerFactory<ts.SourceFile> {
   // TypeChecker disponible uniquement avec un vrai ts.Program (tsc + ts-patch).
   // transpileModule / ESBuild ne fournissent pas de vrai checker → on skip la transformation,
-  // le fallback runtime de @gamn9/data prend le relais.
+  // le fallback runtime de @lambdaql/data prend le relais.
   let checker: ts.TypeChecker | undefined;
   try {
     const c = program.getTypeChecker();
@@ -183,7 +183,7 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
   if (ts.isParenthesizedExpression(node)) return transformExpr(node.expression, params, context);
 
   // Fallback : laisser le nœud tel quel (ex : expressions non reconnues)
-  throw new Error(`@gamn9/compiler: unsupported expression kind ${ts.SyntaxKind[node.kind]}`);
+  throw new Error(`@lambdaql/compiler: unsupported expression kind ${ts.SyntaxKind[node.kind]}`);
 }
 
 function transformAccess(
@@ -207,7 +207,7 @@ function transformAccess(
     const ctx = transformExpr(node.expression, params, context);
     return obj("PropertyExpression", [prop("context", ctx), prop("property", str(node.name.text))]);
   }
-  throw new Error(`@gamn9/compiler: unexpected access node`);
+  throw new Error(`@lambdaql/compiler: unexpected access node`);
 }
 
 // ── AST factory helpers ───────────────────────────────────────────────────────

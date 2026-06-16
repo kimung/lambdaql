@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/unplugin",
+  "name": "@lambdaql/unplugin",
   "version": "1.0.0",
-  "description": "Vite/esbuild/Rollup/webpack plugin for @gamn9 — transforms lambdas to AST at build time",
+  "description": "Vite/esbuild/Rollup/webpack plugin for @lambdaql — transforms lambdas to AST at build time",
   "license": "MIT",
   "repository": {
     "type": "git",

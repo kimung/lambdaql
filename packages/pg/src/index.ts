@@ -1,5 +1,5 @@
 import type { Pool, PoolClient } from "pg";
-import { postgres, type Executor, type TransactionalExecutor } from "@gamn9/data";
+import { postgres, type Executor, type TransactionalExecutor } from "@lambdaql/data";
 
 export function createPgExecutor(pool: Pool): TransactionalExecutor {
   return {

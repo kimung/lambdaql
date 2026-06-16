@@ -8,7 +8,7 @@ export function transform(
   code: string,
   id: string,
 ): { code: string; map: ReturnType<MagicString["generateMap"]> } | null {
-  if (!code.includes("@gamn9/data")) return null;
+  if (!code.includes("@lambdaql/data")) return null;
 
   const scriptKind = /\.[jt]sx$/.test(id) ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const sf = ts.createSourceFile(id, code, ts.ScriptTarget.ES2022, false, scriptKind);

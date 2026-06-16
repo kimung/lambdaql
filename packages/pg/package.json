@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/pg",
+  "name": "@lambdaql/pg",
   "version": "1.0.0",
-  "description": "PostgreSQL driver for @gamn9/data (node-postgres / pg)",
+  "description": "PostgreSQL driver for @lambdaql/data (node-postgres / pg)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -40,11 +40,11 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@gamn9/data": "^1.0.0",
+    "@lambdaql/data": "^1.0.0",
     "pg": ">=8.0.0"
   },
   "devDependencies": {
-    "@gamn9/data": "*",
+    "@lambdaql/data": "*",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.0.0",
     "pg": ">=8.0.0",

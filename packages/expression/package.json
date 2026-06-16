@@ -1,5 +1,5 @@
 {
-  "name": "@gamn9/expression",
+  "name": "@lambdaql/expression",
   "version": "1.0.0",
   "description": "Parse JS arrow functions into typed ASTs",
   "license": "MIT",

@@ -1,5 +1,5 @@
 import Database from "better-sqlite3";
-import { createSqliteExecutor } from "@gamn9/sqlite";
+import { createSqliteExecutor } from "@lambdaql/sqlite";
 import {
   createDatabase,
   insertInto,
@@ -7,7 +7,7 @@ import {
   deleteFrom,
   snakeCaseNaming,
   sqlite as sqliteDialect,
-} from "@gamn9/data";
+} from "@lambdaql/data";
 
 // ── Schéma ────────────────────────────────────────────────────────────────────
 

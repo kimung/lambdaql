@@ -1,5 +1,5 @@
 import type { Database as Sqlite3Db } from "better-sqlite3";
-import { sqlite, type Executor, type TransactionalExecutor } from "@gamn9/data";
+import { sqlite, type Executor, type TransactionalExecutor } from "@lambdaql/data";
 
 function execQuery(db: Sqlite3Db, sql: string, params: unknown[]): { rows: unknown[] } {
   const stmt = db.prepare(sql);

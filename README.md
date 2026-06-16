@@ -1,13 +1,13 @@
-# @gamn9
+# @lambdaql
 
 Monorepo TypeScript — parse des arrow functions JavaScript en AST typés et les traduit en SQL avec paramètres préparés.
 
 ## Packages
 
-| Package                                      | Description                                                   |
-| -------------------------------------------- | ------------------------------------------------------------- |
-| [`@gamn9/expression`](./packages/expression) | Parse des arrow functions en AST typés (lexer + parser Pratt) |
-| [`@gamn9/data`](./packages/data)             | Query builder SQL fluent construit sur `@gamn9/expression`    |
+| Package                                         | Description                                                   |
+| ----------------------------------------------- | ------------------------------------------------------------- |
+| [`@lambdaql/expression`](./packages/expression) | Parse des arrow functions en AST typés (lexer + parser Pratt) |
+| [`@lambdaql/data`](./packages/data)             | Query builder SQL fluent construit sur `@lambdaql/expression` |
 
 ## Démarrage rapide
 
@@ -23,11 +23,11 @@ npm test
 Arrow function JS
       │
       ▼
- @gamn9/expression
+ @lambdaql/expression
    Lexer (acorn)  →  Parser Pratt  →  LambdaExpression (AST typé)
       │
       ▼
- @gamn9/data
+ @lambdaql/data
    Queryable<T>   →  SqlTranslator  →  { sql, params }
 ```
 
@@ -41,7 +41,7 @@ npm run typecheck # vérifie les types sans compiler
 
 ## Développement
 
-Les packages sont liés par npm workspaces. Après `npm install` à la racine, `@gamn9/expression` est disponible comme dépendance locale de `@gamn9/data`.
+Les packages sont liés par npm workspaces. Après `npm install` à la racine, `@lambdaql/expression` est disponible comme dépendance locale de `@lambdaql/data`.
 
 ```sh
 # Travailler sur un seul package

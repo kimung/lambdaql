@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/data",
+  "name": "@lambdaql/data",
   "version": "1.0.0",
-  "description": "Typed SQL query builder powered by @gamn9/expression",
+  "description": "Typed SQL query builder powered by @lambdaql/expression",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -40,7 +40,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@gamn9/expression": "^1.0.0"
+    "@lambdaql/expression": "^1.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

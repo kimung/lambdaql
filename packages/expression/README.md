@@ -1,22 +1,22 @@
-# @gamn9/expression
+# @lambdaql/expression
 
 > Parse des arrow functions JavaScript en AST typés — inspiré des LINQ expression trees de .NET.
 
 ## Installation
 
 ```sh
-npm install @gamn9/expression
+npm install @lambdaql/expression
 ```
 
 ## Usage
 
 ```ts
-import { expression, toSql } from "@gamn9/expression";
+import { expression, toSql } from "@lambdaql/expression";
 
 // Parse une lambda en AST
 const ast = expression.lambda.parse((user: User) => user.age >= 21 && !user.deleted);
 
-// Traduit l'AST en clause SQL (sans paramètres préparés — voir @gamn9/data pour la prod)
+// Traduit l'AST en clause SQL (sans paramètres préparés — voir @lambdaql/data pour la prod)
 const where = toSql(ast, "user");
 // → "(age >= 21) AND NOT (deleted)"
 ```
@@ -62,7 +62,7 @@ Arrow function
 ## Implémenter son propre visitor
 
 ```ts
-import { visit, type ExpressionVisitor } from "@gamn9/expression";
+import { visit, type ExpressionVisitor } from "@lambdaql/expression";
 
 class MyVisitor implements ExpressionVisitor<string> {
   visitName(expr) {

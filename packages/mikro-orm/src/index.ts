@@ -10,9 +10,9 @@ import type {
   ConditionalExpression,
   NullishExpression,
   ArrayLiteralExpression,
-} from "@gamn9/expression";
-import { identityNaming, SqlTranslator, mysql, type NamingStrategy, type Queryable } from "@gamn9/data";
-import type { SelectExpression, SubqueryCondition } from "@gamn9/data";
+} from "@lambdaql/expression";
+import { identityNaming, SqlTranslator, mysql, type NamingStrategy, type Queryable } from "@lambdaql/data";
+import type { SelectExpression, SubqueryCondition } from "@lambdaql/data";
 import type { MikroORM, EntityManager, EntityName } from "@mikro-orm/core";
 
 interface IQueryBuilder {
@@ -136,7 +136,9 @@ export function applyQueryable<T extends object>(
 ): IQueryBuilder {
   const expr = queryable._expr;
   if (expr.kind === "UnionExpression")
-    throw new Error("@gamn9/mikro-orm: applyQueryable() ne supporte pas UNION — utilisez le QB MikroORM directement");
+    throw new Error(
+      "@lambdaql/mikro-orm: applyQueryable() ne supporte pas UNION — utilisez le QB MikroORM directement",
+    );
 
   const se = expr as SelectExpression;
   const aliasOverrides = options?.aliases ?? {};
@@ -214,11 +216,11 @@ export function applyQueryable<T extends object>(
   }
 
   if (se.rawOrders.length > 0) {
-    throw new Error("@gamn9/mikro-orm: orderByRaw() non supporté — utilisez qb.orderBy() directement");
+    throw new Error("@lambdaql/mikro-orm: orderByRaw() non supporté — utilisez qb.orderBy() directement");
   }
 
   if (se.ctes.length > 0) {
-    throw new Error("@gamn9/mikro-orm: withCte() non supporté — utilisez le QB MikroORM directement");
+    throw new Error("@lambdaql/mikro-orm: withCte() non supporté — utilisez le QB MikroORM directement");
   }
 
   if (se.limitVal != null) qb.limit(se.limitVal);
@@ -419,7 +421,7 @@ class MikroOrmConditionBuilder {
           case "getSeconds":
             return `EXTRACT(SECOND FROM ${ctx})`;
           default:
-            throw new Error(`@gamn9/mikro-orm: méthode non supportée : ${m.method}`);
+            throw new Error(`@lambdaql/mikro-orm: méthode non supportée : ${m.method}`);
         }
       }
 
@@ -437,7 +439,7 @@ class MikroOrmConditionBuilder {
         return this.lambda(node as LambdaExpression).condition;
 
       default:
-        throw new Error(`@gamn9/mikro-orm: type d'expression non supporté : ${(node as any).kind}`);
+        throw new Error(`@lambdaql/mikro-orm: type d'expression non supporté : ${(node as any).kind}`);
     }
   }
 

@@ -7,7 +7,7 @@ import {
   PropertyExpression,
   ObjectLiteralExpression,
   FieldExpression,
-} from "@gamn9/expression";
+} from "@lambdaql/expression";
 import { from } from "../src/queryable.js";
 
 type Row = { id: number; name: string; age: number };

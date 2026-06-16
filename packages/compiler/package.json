@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/compiler",
+  "name": "@lambdaql/compiler",
   "version": "1.0.0",
-  "description": "TypeScript Custom Transformer — compiles @gamn9 lambdas to AST at build time",
+  "description": "TypeScript Custom Transformer — compiles @lambdaql lambdas to AST at build time",
   "license": "MIT",
   "repository": {
     "type": "git",

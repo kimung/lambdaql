@@ -1,12 +1,12 @@
 {
-  "name": "@gamn9/monorepo",
+  "name": "@lambdaql/monorepo",
   "private": true,
   "workspaces": [
     "packages/*",
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build -w @gamn9/expression && npm run build -w @gamn9/data && npm run build -w @gamn9/compiler -w @gamn9/mikro-orm -w @gamn9/pg -w @gamn9/sqlite -w @gamn9/unplugin",
+    "build": "npm run build -w @lambdaql/expression && npm run build -w @lambdaql/data && npm run build -w @lambdaql/compiler -w @lambdaql/mikro-orm -w @lambdaql/pg -w @lambdaql/sqlite -w @lambdaql/unplugin",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",

@@ -1,11 +1,11 @@
-# @gamn9/mikro-orm
+# @lambdaql/mikro-orm
 
-[MikroORM](https://mikro-orm.io/) QueryBuilder integration for [@gamn9/data](../data).
+[MikroORM](https://mikro-orm.io/) QueryBuilder integration for [@lambdaql/data](../data).
 
 ## Installation
 
 ```sh
-npm install @gamn9/mikro-orm @gamn9/data
+npm install @lambdaql/mikro-orm @lambdaql/data
 ```
 
 `@mikro-orm/core` is a peer dependency.
@@ -13,8 +13,8 @@ npm install @gamn9/mikro-orm @gamn9/data
 ## Usage
 
 ```ts
-import { applyQueryable } from "@gamn9/mikro-orm";
-import { from } from "@gamn9/data";
+import { applyQueryable } from "@lambdaql/mikro-orm";
+import { from } from "@lambdaql/data";
 
 const query = from<User>("user")
   .filter((u) => u.active && u.age >= 18)
@@ -53,7 +53,7 @@ Requires MikroORM entity metadata to be available (i.e. `orm.getMetadata()`).
 Column names are derived from MikroORM's own naming strategy, with priority given to explicit `@Property({ fieldName })` overrides:
 
 ```ts
-import { createNamingFromMikroOrm } from "@gamn9/mikro-orm";
+import { createNamingFromMikroOrm } from "@lambdaql/mikro-orm";
 
 const naming = createNamingFromMikroOrm(orm, userMeta);
 applyQueryable(qb, query, { naming });
@@ -61,10 +61,10 @@ applyQueryable(qb, query, { naming });
 
 ## Parameters
 
-MikroORM QueryBuilder uses positional `?` placeholders. `@gamn9/mikro-orm` translates the `$1`/`$2` placeholders from `@gamn9/data` automatically.
+MikroORM QueryBuilder uses positional `?` placeholders. `@lambdaql/mikro-orm` translates the `$1`/`$2` placeholders from `@lambdaql/data` automatically.
 
 ## Limitations
 
 - **UNION** is not supported — use the MikroORM QueryBuilder directly for union queries.
 - **CTE (WITH)** is not supported.
-- LIKE arguments must be string constants (use the [@gamn9/compiler](../compiler) AOT transformer for closure values).
+- LIKE arguments must be string constants (use the [@lambdaql/compiler](../compiler) AOT transformer for closure values).

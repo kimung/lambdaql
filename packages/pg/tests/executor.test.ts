@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Pool, PoolClient } from "pg";
 import { createPgExecutor } from "../src/index.js";
-import { postgres } from "@gamn9/data";
+import { postgres } from "@lambdaql/data";
 
 function mockPool() {
   const clientQuery = vi.fn().mockResolvedValue({ rows: [] });

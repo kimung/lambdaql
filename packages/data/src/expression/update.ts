@@ -1,4 +1,4 @@
-import type { FieldExpression, LambdaExpression } from "@gamn9/expression";
+import type { FieldExpression, LambdaExpression } from "@lambdaql/expression";
 import type { SourceExpression } from "./source.js";
 
 export class UpdateExpression {

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { MikroORM } from "@mikro-orm/better-sqlite";
 import { EntitySchema } from "@mikro-orm/core";
-import { from } from "@gamn9/data";
+import { from } from "@lambdaql/data";
 import { applyQueryable, createNamingFromMikroOrm } from "../src/index.js";
-import type { Queryable } from "@gamn9/data";
+import type { Queryable } from "@lambdaql/data";
 
 // ── Entités ──────────────────────────────────────────────────────────────────
 

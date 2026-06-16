@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { from } from "@gamn9/data";
-import { snakeCaseNaming } from "@gamn9/data";
+import { from } from "@lambdaql/data";
+import { snakeCaseNaming } from "@lambdaql/data";
 import { applyQueryable, createNamingFromMikroOrm } from "../src/index.js";
 
 type User = { id: number; name: string; age: number; active: boolean; email: string; createdAt: string | null };
@@ -497,7 +497,7 @@ describe("applyQueryable — erreurs", () => {
   it("rejette les UnionExpression", () => {
     const qb = mockQb();
     const q = from<User>("u").union(from<User>("u"));
-    expect(() => applyQueryable(qb, q)).toThrow("@gamn9/mikro-orm");
+    expect(() => applyQueryable(qb, q)).toThrow("@lambdaql/mikro-orm");
   });
 
   it("ignore les joins gamn9 sans erreur", () => {

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { transform } from "../src/transform.js";
 
 function makeFile(body: string): string {
-  return `import { from } from "@gamn9/data";\n${body}`;
+  return `import { from } from "@lambdaql/data";\n${body}`;
 }
 
 // Évalue le premier argument transformé d'un appel de méthode dans le code généré
@@ -143,7 +143,7 @@ q.join("p", p, (u, p) => u.id === p.userId);`);
 });
 
 describe("transform — non-régression (faux positifs)", () => {
-  it("retourne null si pas d'import @gamn9/data", () => {
+  it("retourne null si pas d'import @lambdaql/data", () => {
     const result = transform(`const arr = [1,2,3];\narr.filter(x => x > 0);`, "test.ts");
     expect(result).toBeNull();
   });
@@ -166,7 +166,7 @@ describe("transform — non-régression (faux positifs)", () => {
 
 describe("transform — createDatabase (pattern Database.from)", () => {
   it("transforme db.from().filter() issu de createDatabase", () => {
-    const code = `import { createDatabase } from "@gamn9/data";
+    const code = `import { createDatabase } from "@lambdaql/data";
 const db = createDatabase(exec);
 db.from("user").filter(u => u.active);`;
     const ast: any = extractArg(code);
@@ -176,7 +176,7 @@ db.from("user").filter(u => u.active);`;
   });
 
   it("transforme db.from().filter().select()", () => {
-    const code = `import { createDatabase } from "@gamn9/data";
+    const code = `import { createDatabase } from "@lambdaql/data";
 const db = createDatabase(exec);
 db.from("user").filter(u => u.active).select(u => u.name);`;
     const asts = extractAllArgs(code);
@@ -184,7 +184,7 @@ db.from("user").filter(u => u.active).select(u => u.name);`;
   });
 
   it("transforme une closure dans db.from().filter()", () => {
-    const code = `import { createDatabase } from "@gamn9/data";
+    const code = `import { createDatabase } from "@lambdaql/data";
 const db = createDatabase(exec);
 const minAge = 18;
 db.from("user").filter(u => u.age > minAge);`;
@@ -196,7 +196,7 @@ db.from("user").filter(u => u.age > minAge);`;
 
 describe("transform — paramètres typés Queryable<T>", () => {
   it("transforme dans une fonction avec param q: Queryable<User>", () => {
-    const code = `import { from } from "@gamn9/data";
+    const code = `import { from } from "@lambdaql/data";
 function doQuery(q: Queryable<User>) {
   return q.filter(u => u.active);
 }`;
@@ -206,14 +206,14 @@ function doQuery(q: Queryable<User>) {
   });
 
   it("transforme dans une arrow function avec param q: Queryable<T>", () => {
-    const code = `import { from } from "@gamn9/data";
+    const code = `import { from } from "@lambdaql/data";
 const doQuery = (q: Queryable<User>) => q.filter(u => u.age > 0);`;
     const ast: any = extractArg(code);
     expect(ast.kind).toBe("LambdaExpression");
   });
 
   it("ne transforme pas un paramètre non-Queryable dans le même fichier", () => {
-    const code = `import { from } from "@gamn9/data";
+    const code = `import { from } from "@lambdaql/data";
 const q = from("user");
 function process(arr: number[]) {
   return arr.filter(x => x > 0);

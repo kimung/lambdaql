@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import Database from "better-sqlite3";
-import { createDatabase } from "@gamn9/data";
+import { createDatabase } from "@lambdaql/data";
 import { createSqliteExecutor } from "../src/index.js";
 
 type User = { id: number; name: string; age: number; email: string | null };

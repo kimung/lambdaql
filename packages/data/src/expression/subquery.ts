@@ -1,4 +1,4 @@
-import type { LambdaExpression } from "@gamn9/expression";
+import type { LambdaExpression } from "@lambdaql/expression";
 import type { SelectExpression } from "./select.js";
 import type { UnionExpression } from "./union.js";
 

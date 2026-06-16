@@ -1,4 +1,4 @@
-import type { FieldExpression } from "@gamn9/expression";
+import type { FieldExpression } from "@lambdaql/expression";
 import type { SourceExpression } from "./source.js";
 
 export class InsertExpression {

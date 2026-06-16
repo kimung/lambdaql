@@ -1,19 +1,19 @@
 /**
- * Exemple AOT — @gamn9/compiler avec ts-patch
+ * Exemple AOT — @lambdaql/compiler avec ts-patch
  *
  * Prérequis :
  *   npm install          (installe ts-patch)
  *   npm run prepare      (ts-patch install — patche TypeScript une seule fois)
  *   npm start            (tsc + node dist/index.js)
  *
- * Le transformer @gamn9/compiler remplace les arrow functions passées à
- * filter/select/orderBy par leur AST @gamn9/expression à la compilation,
+ * Le transformer @lambdaql/compiler remplace les arrow functions passées à
+ * filter/select/orderBy par leur AST @lambdaql/expression à la compilation,
  * éliminant le parsing runtime (fn.toString() → Lexer → Parser).
  * Le bénéfice est mesurable sur les requêtes exécutées en boucle serrée.
  */
 import Database from "better-sqlite3";
-import { createSqliteExecutor } from "@gamn9/sqlite";
-import { createDatabase, snakeCaseNaming } from "@gamn9/data";
+import { createSqliteExecutor } from "@lambdaql/sqlite";
+import { createDatabase, snakeCaseNaming } from "@lambdaql/data";
 
 type Product = { id: number; name: string; price: number; stock: number; categoryId: number };
 

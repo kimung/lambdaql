@@ -13,7 +13,7 @@ import type {
   NullishExpression,
   ArrayLiteralExpression,
   TemplateLiteralExpression,
-} from "@gamn9/expression";
+} from "@lambdaql/expression";
 import type { SelectExpression, JoinExpression } from "../expression/select.js";
 import type { RawExpression } from "../expression/raw.js";
 import type { CteExpression } from "../expression/cte.js";
@@ -186,7 +186,7 @@ export class SqlTranslator {
         if (n.name === "Math") return n.name;
         throw new Error(
           `Lambda references '${n.name}' which is not a query parameter. ` +
-            `Closures require the @gamn9/compiler AOT transformer. ` +
+            `Closures require the @lambdaql/compiler AOT transformer. ` +
             `Without it, only the lambda's own parameters are accessible.`,
         );
       }
@@ -462,7 +462,7 @@ export class SqlTranslator {
   private likeVal(arg: Expression | undefined): string {
     if (!arg || arg.kind !== "ConstantExpression")
       throw new Error(
-        "LIKE argument must be a string constant — use the @gamn9/compiler AOT transformer for closure values",
+        "LIKE argument must be a string constant — use the @lambdaql/compiler AOT transformer for closure values",
       );
     return String((arg as ConstantExpression).value)
       .replace(/%/g, "\\%")

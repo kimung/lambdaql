@@ -1,5 +1,5 @@
 {
-  "name": "@gamn9/example-aot",
+  "name": "@lambdaql/example-aot",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,9 +8,9 @@
     "start": "npm run build && node dist/index.js"
   },
   "dependencies": {
-    "@gamn9/compiler": "*",
-    "@gamn9/data": "*",
-    "@gamn9/sqlite": "*"
+    "@lambdaql/compiler": "*",
+    "@lambdaql/data": "*",
+    "@lambdaql/sqlite": "*"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.0",

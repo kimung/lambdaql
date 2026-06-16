@@ -13,7 +13,7 @@ export function collectQueryableScope(sf: ts.SourceFile): QueryableScope {
   for (const stmt of sf.statements) {
     if (!ts.isImportDeclaration(stmt)) continue;
     const mod = (stmt.moduleSpecifier as ts.StringLiteral).text;
-    if (mod !== "@gamn9/data") continue;
+    if (mod !== "@lambdaql/data") continue;
     const bindings = stmt.importClause?.namedBindings;
     if (!bindings || !ts.isNamedImports(bindings)) continue;
     for (const el of bindings.elements) {

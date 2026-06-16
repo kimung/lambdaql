@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/sqlite",
+  "name": "@lambdaql/sqlite",
   "version": "1.0.0",
-  "description": "SQLite driver for @gamn9/data (better-sqlite3)",
+  "description": "SQLite driver for @lambdaql/data (better-sqlite3)",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -40,11 +40,11 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@gamn9/data": "^1.0.0",
+    "@lambdaql/data": "^1.0.0",
     "better-sqlite3": ">=9.0.0"
   },
   "devDependencies": {
-    "@gamn9/data": "*",
+    "@lambdaql/data": "*",
     "@types/better-sqlite3": "^7.6.0",
     "@types/node": "^22.0.0",
     "better-sqlite3": ">=9.0.0",

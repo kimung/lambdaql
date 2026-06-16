@@ -1,12 +1,12 @@
-# @gamn9/data
+# @lambdaql/data
 
-> Query builder SQL fluent et typé, construit sur `@gamn9/expression`.  
+> Query builder SQL fluent et typé, construit sur `@lambdaql/expression`.  
 > Toutes les valeurs passent par des **paramètres préparés** — aucune concaténation SQL.
 
 ## Installation
 
 ```sh
-npm install @gamn9/data
+npm install @lambdaql/data
 ```
 
 ## Usage
@@ -14,7 +14,7 @@ npm install @gamn9/data
 ### SELECT
 
 ```ts
-import { from } from "@gamn9/data";
+import { from } from "@lambdaql/data";
 
 type User = { id: number; name: string; age: number; active: boolean; deletedAt: string | null };
 
@@ -77,7 +77,7 @@ from<User>("user")
 ### INSERT
 
 ```ts
-import { insertInto } from "@gamn9/data";
+import { insertInto } from "@lambdaql/data";
 
 const { sql, params } = insertInto("user", { name: "Kim", age: 30, active: true });
 // sql    → "INSERT INTO user (name, age, active) VALUES ($1, $2, $3)"
@@ -87,7 +87,7 @@ const { sql, params } = insertInto("user", { name: "Kim", age: 30, active: true 
 ### UPDATE
 
 ```ts
-import { updateIn } from "@gamn9/data";
+import { updateIn } from "@lambdaql/data";
 
 const { sql, params } = updateIn<User>("user", { active: false }, (u) => u.id === 42);
 // sql    → "UPDATE user SET active = $1 WHERE (id = $2)"
@@ -97,7 +97,7 @@ const { sql, params } = updateIn<User>("user", { active: false }, (u) => u.id ==
 ### DELETE
 
 ```ts
-import { deleteFrom } from "@gamn9/data";
+import { deleteFrom } from "@lambdaql/data";
 
 const { sql, params } = deleteFrom<User>("user", (u) => u.id === 42);
 // sql    → "DELETE FROM user WHERE (id = $1)"
@@ -151,7 +151,7 @@ Génère un DELETE. Le `where` est obligatoire.
 ## Notes
 
 - Les paramètres préparés utilisent la notation `$1`, `$2`, … (PostgreSQL / SQLite). Pour MySQL (`?`), sous-classer `SqlTranslator` et surcharger `addParam`.
-- `@gamn9/data` ne fournit pas de couche d'exécution — passer `{ sql, params }` directement au driver de ton choix (`pg`, `better-sqlite3`, `mysql2`, etc.).
+- `@lambdaql/data` ne fournit pas de couche d'exécution — passer `{ sql, params }` directement au driver de ton choix (`pg`, `better-sqlite3`, `mysql2`, etc.).
 
 ## Licence
 

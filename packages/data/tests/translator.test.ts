@@ -7,7 +7,7 @@ import {
   NameExpression,
   LambdaExpression,
   PropertyExpression,
-} from "@gamn9/expression";
+} from "@lambdaql/expression";
 
 type User = { id: number; name: string; age: number; active: boolean; deletedAt: string | null; email: string };
 type Post = { id: number; userId: number; title: string; published: boolean };

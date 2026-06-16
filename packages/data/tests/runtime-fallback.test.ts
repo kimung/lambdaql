@@ -6,7 +6,7 @@ import {
   BinaryExpression,
   ConstantExpression,
   MethodExpression,
-} from "@gamn9/expression";
+} from "@lambdaql/expression";
 import { from } from "../src/queryable.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,9 +39,9 @@ describe("closure non résolue — erreur explicite", () => {
     expect(() => from<{ age: number }>("user").filter(lambda).toSql()).toThrowError(/minAge/);
   });
 
-  it("le message d'erreur mentionne @gamn9/compiler", () => {
+  it("le message d'erreur mentionne @lambdaql/compiler", () => {
     const lambda = closureLambda("u", "limit");
-    expect(() => from<{ age: number }>("user").filter(lambda).toSql()).toThrowError(/@gamn9\/compiler/);
+    expect(() => from<{ age: number }>("user").filter(lambda).toSql()).toThrowError(/@lambdaql\/compiler/);
   });
 
   it("ne throw pas quand tous les identifiants sont des paramètres lambda valides", () => {
@@ -82,7 +82,7 @@ describe("avertissement dev — fallback runtime", () => {
       .filter((u) => u.age > 18)
       .toSql();
     expect(console.warn).toHaveBeenCalledOnce();
-    expect(vi.mocked(console.warn).mock.calls[0]?.[0]).toMatch(/@gamn9\/compiler/);
+    expect(vi.mocked(console.warn).mock.calls[0]?.[0]).toMatch(/@lambdaql\/compiler/);
   });
 
   it("n'émet le warning qu'une seule fois même avec plusieurs lambdas", async () => {

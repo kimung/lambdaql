@@ -1,7 +1,7 @@
 {
-  "name": "@gamn9/mikro-orm",
+  "name": "@lambdaql/mikro-orm",
   "version": "1.0.0",
-  "description": "MikroORM QueryBuilder integration for @gamn9/data",
+  "description": "MikroORM QueryBuilder integration for @lambdaql/data",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -41,13 +41,13 @@
   },
   "peerDependencies": {
     "@mikro-orm/core": ">=6.0.0",
-    "@gamn9/data": "^1.0.0"
+    "@lambdaql/data": "^1.0.0"
   },
   "devDependencies": {
     "@mikro-orm/better-sqlite": "^6.0.0",
     "@mikro-orm/core": "^6.0.0",
-    "@gamn9/data": "*",
-    "@gamn9/expression": "*",
+    "@lambdaql/data": "*",
+    "@lambdaql/expression": "*",
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"

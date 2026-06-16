@@ -28,16 +28,16 @@ L'ordre de build : `expression` → `data` → `compiler` et `mikro-orm` (ces de
 
 ```
 packages/
-├── expression/   @gamn9/expression  — lexer (acorn) + parser Pratt → AST typé
-├── data/         @gamn9/data        — query builder SQL (Queryable<T>, SqlTranslator)
-├── compiler/     @gamn9/compiler    — TypeScript custom transformer AOT (ts-patch)
-└── mikro-orm/    @gamn9/mikro-orm   — intégration MikroORM QueryBuilder
+├── expression/   @lambdaql/expression  — lexer (acorn) + parser Pratt → AST typé
+├── data/         @lambdaql/data        — query builder SQL (Queryable<T>, SqlTranslator)
+├── compiler/     @lambdaql/compiler    — TypeScript custom transformer AOT (ts-patch)
+└── mikro-orm/    @lambdaql/mikro-orm   — intégration MikroORM QueryBuilder
 ```
 
 Racine : `package.json` (npm workspaces), `tsconfig.base.json` (options TS communes), `.gitignore`.  
 Chaque package a son propre `tsconfig.json` qui étend `../../tsconfig.base.json` (sauf `expression` qui est autonome).
 
-## Architecture — @gamn9/expression
+## Architecture — @lambdaql/expression
 
 Pipeline : `fn.toString()` → `Lexer` (acorn) → `Generator<Token>` → `LambdaParser` (Pratt) → `LambdaExpression`.
 
@@ -47,11 +47,11 @@ Pipeline : `fn.toString()` → `Lexer` (acorn) → `Generator<Token>` → `Lambd
 
 **Visitor** (`src/utils/visitor.ts`) : `visit(expr, visitor)` dispatch par `expr.kind` via un switch exhaustif. Pour ajouter un type de nœud : créer la classe dans `src/parser/expression/`, l'exporter depuis `src/index.ts`, ajouter une méthode dans `ExpressionVisitor<T>`, et un case dans `visit()`.
 
-**`toSql()`** (`src/utils/sql-visitor.ts`) : visitor simple pour le développement/debug. Génère du SQL par concaténation de chaînes — **ne pas utiliser en production**. Pour la prod, utiliser `@gamn9/data`.
+**`toSql()`** (`src/utils/sql-visitor.ts`) : visitor simple pour le développement/debug. Génère du SQL par concaténation de chaînes — **ne pas utiliser en production**. Pour la prod, utiliser `@lambdaql/data`.
 
-## Architecture — @gamn9/data
+## Architecture — @lambdaql/data
 
-Dépend de `@gamn9/expression` pour le parsing des lambdas.
+Dépend de `@lambdaql/expression` pour le parsing des lambdas.
 
 **`Queryable<T>`** (`src/queryable.ts`) : immutable — chaque méthode retourne une nouvelle instance wrappant un `SelectExpression` mis à jour via `.patch()`. `toSql()` instancie un `SqlTranslator` et traduit.
 
@@ -68,15 +68,15 @@ Dépend de `@gamn9/expression` pour le parsing des lambdas.
 
 **Helpers DML** : `insertInto`, `updateIn`, `deleteFrom` dans `src/queryable.ts` — construisent les expressions depuis des objets plain et délèguent au `SqlTranslator`. Acceptent `options?: { naming?: NamingStrategy; dialect?: Dialect }` — la `NamingStrategy` s'applique aux noms de colonnes issus des clés de l'objet.
 
-## Architecture — @gamn9/compiler
+## Architecture — @lambdaql/compiler
 
-Transformer TypeScript AOT (Custom Transformer, compatible ts-patch). Remplace les arrow functions passées aux méthodes de `Queryable<T>` par leur AST `@gamn9/expression` à la compilation, évitant le parsing runtime via `fn.toString()`.
+Transformer TypeScript AOT (Custom Transformer, compatible ts-patch). Remplace les arrow functions passées aux méthodes de `Queryable<T>` par leur AST `@lambdaql/expression` à la compilation, évitant le parsing runtime via `fn.toString()`.
 
 - Fonctionne uniquement avec un vrai `ts.Program` (TypeChecker disponible) — le fallback runtime prend le relais avec `transpileModule` / ESBuild.
 - Vérifie `isQueryable()` via le TypeChecker pour éviter les faux positifs sur d'autres `.filter()`.
 - Gère les closures : un identifiant externe est emballé en `{ kind: 'ConstantExpression', value: <ref> }` pour conserver la référence vive.
 
-## Architecture — @gamn9/mikro-orm
+## Architecture — @lambdaql/mikro-orm
 
 Intègre `Queryable<T>` avec le QueryBuilder MikroORM. Point d'entrée : `applyQueryable(qb, queryable, options?)`.
 

@@ -1,4 +1,4 @@
-import type { LambdaExpression } from "@gamn9/expression";
+import type { LambdaExpression } from "@lambdaql/expression";
 import type { SourceExpression } from "./source.js";
 
 export class DeleteExpression {

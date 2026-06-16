@@ -89,7 +89,7 @@ function generateExpr(node: ts.Expression, params: Set<string>, sf: ts.SourceFil
   if (ts.isAsExpression(node)) return generateExpr(node.expression, params, sf);
   if (ts.isNonNullExpression(node)) return generateExpr(node.expression, params, sf);
 
-  throw new Error(`@gamn9/unplugin: unsupported expression kind ${ts.SyntaxKind[node.kind]}`);
+  throw new Error(`@lambdaql/unplugin: unsupported expression kind ${ts.SyntaxKind[node.kind]}`);
 }
 
 function generateAccess(
@@ -108,5 +108,5 @@ function generateAccess(
     const property = JSON.stringify(node.name.text);
     return `{kind:"PropertyExpression",context:${ctx},property:${property}}`;
   }
-  throw new Error("@gamn9/unplugin: unexpected access node");
+  throw new Error("@lambdaql/unplugin: unexpected access node");
 }
