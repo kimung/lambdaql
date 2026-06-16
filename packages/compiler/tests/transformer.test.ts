@@ -7,8 +7,8 @@ const QUERYABLE_STUB = `
 declare class Queryable<T> {
   filter(p: any): Queryable<T>
   select<U>(s: any): Queryable<U>
-  join<U>(other: Queryable<U>, on: any): Queryable<T>
-  leftJoin<U>(other: Queryable<U>, on: any): Queryable<T>
+  join<K extends string, U>(alias: K, other: Queryable<U>, on: any): Queryable<T>
+  leftJoin<K extends string, U>(alias: K, other: Queryable<U>, on: any): Queryable<T>
   groupBy(s: any): Queryable<T>
   having(p: any): Queryable<T>
   orderBy(s: any): Queryable<T>
@@ -134,8 +134,8 @@ describe("Transformer — closures", () => {
 });
 
 describe("Transformer — méthodes multi-params (join)", () => {
-  it("transforme le second argument de join", () => {
-    const js = compileSource(`q.join(other, (u, p) => u.id === p.userId)`);
+  it("transforme le troisième argument de join (après alias)", () => {
+    const js = compileSource(`q.join("p", other, (u, p) => u.id === p.userId)`);
     expect(js).toMatch(/LambdaExpression/);
     expect(js).toMatch(/BinaryExpression/);
   });

@@ -17,6 +17,9 @@ import { SqlTranslator, type SqlResult } from "./sql/translator.js";
 type Fn<T> = (x: SqlRow<T>, ...rest: any[]) => unknown;
 type FnOrExpr<T> = Fn<T> | LambdaExpression;
 
+type JoinFn<T, U> = (src: SqlRow<T>, joined: SqlRow<U>) => boolean;
+type JoinFnOrExpr<T, U> = JoinFn<T, U> | LambdaExpression;
+
 let _runtimeWarnIssued = false;
 
 function resolve<T>(v: FnOrExpr<T>): LambdaExpression {
@@ -59,18 +62,26 @@ export class Queryable<T> {
     return new Queryable<U>(this._select.patch({ selector: resolve(selector) }), this._ctx);
   }
 
-  join<U, R = T & U>(other: Queryable<U>, on: FnOrExpr<T>): Queryable<R> {
+  join<K extends string, U>(_alias: K, other: Queryable<U>, on: JoinFnOrExpr<T, U>): Queryable<T & Record<K, U>> {
     const s = this._select;
-    return new Queryable<R>(
-      s.patch({ joins: [...s.joins, new JoinExpression(other._select.source, resolve(on), "INNER")] }),
+    return new Queryable<T & Record<K, U>>(
+      s.patch({
+        joins: [...s.joins, new JoinExpression(other._select.source, resolve(on as FnOrExpr<unknown>), "INNER")],
+      }),
       this._ctx,
     );
   }
 
-  leftJoin<U, R = T & Partial<U>>(other: Queryable<U>, on: FnOrExpr<T>): Queryable<R> {
+  leftJoin<K extends string, U>(
+    _alias: K,
+    other: Queryable<U>,
+    on: JoinFnOrExpr<T, U>,
+  ): Queryable<T & Partial<Record<K, U>>> {
     const s = this._select;
-    return new Queryable<R>(
-      s.patch({ joins: [...s.joins, new JoinExpression(other._select.source, resolve(on), "LEFT")] }),
+    return new Queryable<T & Partial<Record<K, U>>>(
+      s.patch({
+        joins: [...s.joins, new JoinExpression(other._select.source, resolve(on as FnOrExpr<unknown>), "LEFT")],
+      }),
       this._ctx,
     );
   }

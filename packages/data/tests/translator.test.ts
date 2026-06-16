@@ -211,7 +211,7 @@ describe("SELECT — modificateurs", () => {
 describe("SELECT — JOIN", () => {
   it("INNER JOIN", () => {
     const { sql, params } = from<User>("user")
-      .join(from<Post>("post"), (u, p) => u.id === p.userId)
+      .join("p", from<Post>("post"), (u, p) => u.id === p.userId)
       .toSql();
     expect(sql).toBe("SELECT * FROM user AS t0 INNER JOIN post AS t1 ON (t0.id = t1.userId)");
     expect(params).toEqual([]);
@@ -219,14 +219,14 @@ describe("SELECT — JOIN", () => {
 
   it("LEFT JOIN", () => {
     const { sql } = from<User>("user")
-      .leftJoin(from<Post>("post"), (u, p) => u.id === p.userId)
+      .leftJoin("p", from<Post>("post"), (u, p) => u.id === p.userId)
       .toSql();
     expect(sql).toBe("SELECT * FROM user AS t0 LEFT JOIN post AS t1 ON (t0.id = t1.userId)");
   });
 
   it("JOIN + filtre multi-param", () => {
     const { sql, params } = from<User>("user")
-      .join(from<Post>("post"), (u, p) => u.id === p.userId)
+      .join("p", from<Post>("post"), (u, p) => u.id === p.userId)
       .filter((u: any, p: any) => u.active && p.published)
       .toSql();
     expect(sql).toBe(
@@ -277,8 +277,8 @@ describe("SELECT — JOIN multiples (aliasing)", () => {
 
   it("deux JOIN → t1 puis t2 correctement aliasés", () => {
     const { sql } = from<User>("user")
-      .join(from<Post>("post"), (u, p) => u.id === p.userId)
-      .join(from<Comment>("comment"), (u, c) => u.id === c.userId)
+      .join("post", from<Post>("post"), (u, p) => u.id === p.userId)
+      .join("comment", from<Comment>("comment"), (u, c) => u.id === c.userId)
       .toSql();
     expect(sql).toBe(
       "SELECT * FROM user AS t0" +
@@ -290,9 +290,9 @@ describe("SELECT — JOIN multiples (aliasing)", () => {
   it("trois JOIN → t1, t2, t3", () => {
     type Tag = { id: number; userId: number };
     const { sql } = from<User>("user")
-      .join(from<Post>("post"), (u, p) => u.id === p.userId)
-      .join(from<Comment>("comment"), (u, c) => u.id === c.userId)
-      .join(from<Tag>("tag"), (u, t) => u.id === t.userId)
+      .join("post", from<Post>("post"), (u, p) => u.id === p.userId)
+      .join("comment", from<Comment>("comment"), (u, c) => u.id === c.userId)
+      .join("tag", from<Tag>("tag"), (u, t) => u.id === t.userId)
       .toSql();
     expect(sql).toContain("INNER JOIN post AS t1 ON (t0.id = t1.userId)");
     expect(sql).toContain("INNER JOIN comment AS t2 ON (t0.id = t2.userId)");

@@ -502,7 +502,7 @@ describe("applyQueryable — erreurs", () => {
 
   it("ignore les joins gamn9 sans erreur", () => {
     const qb = mockQb();
-    const q = from<User>("u").join(from<User>("other"), (a, b) => a.id === b.id);
+    const q = from<User>("u").join("other", from<User>("other"), (a, b) => a.id === b.id);
     expect(() => applyQueryable(qb, q)).not.toThrow();
   });
 });

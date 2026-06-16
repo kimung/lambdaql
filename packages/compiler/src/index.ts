@@ -38,15 +38,11 @@ export default function (program: ts.Program): ts.TransformerFactory<ts.SourceFi
               ]);
             }
           }
-          if (JOIN_METHODS.has(method) && node.arguments.length >= 2) {
-            const onArg = node.arguments[1]!;
-            if (ts.isArrowFunction(onArg)) {
+          if (JOIN_METHODS.has(method) && node.arguments.length >= 3) {
+            const onArg = node.arguments[2];
+            if (onArg && ts.isArrowFunction(onArg)) {
               const params = collectParams(onArg);
-              const newArgs = [
-                node.arguments[0]!,
-                transformLambda(onArg, params, context),
-                ...Array.from(node.arguments).slice(2),
-              ];
+              const newArgs = [node.arguments[0]!, node.arguments[1]!, transformLambda(onArg, params, context)];
               return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, newArgs);
             }
           }
