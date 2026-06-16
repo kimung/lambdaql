@@ -1,16 +1,37 @@
 {
   "name": "@gamn9/monorepo",
   "private": true,
-  "workspaces": ["packages/*", "examples/*"],
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
   "scripts": {
-    "build":     "npm run build -w @gamn9/expression && npm run build -w @gamn9/data && npm run build -w @gamn9/compiler -w @gamn9/mikro-orm -w @gamn9/pg -w @gamn9/sqlite",
-    "test":      "npm run test --workspaces --if-present",
+    "build": "npm run build -w @gamn9/expression && npm run build -w @gamn9/data && npm run build -w @gamn9/compiler -w @gamn9/mikro-orm -w @gamn9/pg -w @gamn9/sqlite",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "version":   "changeset version",
-    "release":   "changeset publish --provenance"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "prepare": "husky",
+    "version": "changeset version",
+    "release": "changeset publish --provenance"
+  },
+  "lint-staged": {
+    "**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
-    "tsx": "^4.19.0"
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4",
+    "tsx": "^4.19.0",
+    "typescript-eslint": "^8.61.1"
   }
 }
