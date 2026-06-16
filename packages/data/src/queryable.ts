@@ -17,8 +17,20 @@ import { SqlTranslator, type SqlResult } from "./sql/translator.js";
 type Fn<T> = (x: SqlRow<T>, ...rest: any[]) => unknown;
 type FnOrExpr<T> = Fn<T> | LambdaExpression;
 
+let _runtimeWarnIssued = false;
+
 function resolve<T>(v: FnOrExpr<T>): LambdaExpression {
-  return typeof v === "function" ? expression.lambda.parse(v as Fn<unknown>) : v;
+  if (typeof v === "function") {
+    if (!_runtimeWarnIssued && process.env["NODE_ENV"] !== "production" && process.env["NODE_ENV"] !== "test") {
+      _runtimeWarnIssued = true;
+      console.warn(
+        "[gamn9] AOT compiler inactive: lambda closures are not supported in runtime mode. " +
+          "Configure @gamn9/compiler (ts-patch transformer) to enable closure capture.",
+      );
+    }
+    return expression.lambda.parse(v as Fn<unknown>);
+  }
+  return v;
 }
 
 export function from<T>(table: string): Queryable<T> {

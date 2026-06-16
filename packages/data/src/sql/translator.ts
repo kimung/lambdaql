@@ -181,7 +181,14 @@ export class SqlTranslator {
     switch (node.kind) {
       case "NameExpression": {
         const n = node as NameExpression;
-        return aliases.get(n.name) ?? n.name;
+        const alias = aliases.get(n.name);
+        if (alias !== undefined) return alias;
+        if (n.name === "Math") return n.name;
+        throw new Error(
+          `Lambda references '${n.name}' which is not a query parameter. ` +
+            `Closures require the @gamn9/compiler AOT transformer. ` +
+            `Without it, only the lambda's own parameters are accessible.`,
+        );
       }
 
       case "ConstantExpression": {
