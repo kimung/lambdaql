@@ -212,4 +212,24 @@ describe("Parser — LambdaExpression", () => {
   it("throws on non-identifier lambda parameter", () => {
     expect(() => parse("(u, 1) => u.id")).toThrow("Lambda parameter must be a NameExpression, got ConstantExpression");
   });
+
+  describe("destructuration des paramètres (non supportée au runtime)", () => {
+    it("erreur claire sur le shorthand ({ age }) => …", () => {
+      expect(() => parse("({ age }) => age > 18")).toThrow(/requires the @lambdaql\/compiler AOT transformer/);
+    });
+
+    it("erreur claire sur le renommage ({ age: a }) => …", () => {
+      expect(() => parse("({ age: a }) => a > 18")).toThrow(/requires the @lambdaql\/compiler AOT transformer/);
+    });
+
+    it("erreur claire sur un mix (u, { id }) => …", () => {
+      expect(() => parse("(u, { id }) => u.x === id")).toThrow(/requires the @lambdaql\/compiler AOT transformer/);
+    });
+
+    it("ne casse pas un objet littéral valide en corps de lambda (select)", () => {
+      const ast = parse("u => ({ id: u.id, name: u.name })") as any;
+      expect(ast.body.kind).toBe("ObjectLiteralExpression");
+      expect(ast.body.fields).toHaveLength(2);
+    });
+  });
 });

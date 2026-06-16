@@ -27,8 +27,8 @@ function resolve<T>(v: FnOrExpr<T>): LambdaExpression {
     if (!_runtimeWarnIssued && process.env["NODE_ENV"] !== "production" && process.env["NODE_ENV"] !== "test") {
       _runtimeWarnIssued = true;
       console.warn(
-        "[gamn9] AOT compiler inactive: lambda closures are not supported in runtime mode. " +
-          "Configure @lambdaql/compiler (ts-patch transformer) to enable closure capture.",
+        "[lambdaql] AOT compiler inactive: lambda closures and parameter destructuring are not supported in runtime mode. " +
+          "Configure @lambdaql/compiler (ts-patch transformer) to enable them.",
       );
     }
     return expression.lambda.parse(v as Fn<unknown>);

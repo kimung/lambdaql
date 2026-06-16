@@ -31,9 +31,8 @@ export default function (program: ts.Program): ts.TransformerFactory<ts.SourceFi
           if (QUERYABLE_METHODS.has(method)) {
             const [first, ...rest] = node.arguments;
             if (first && ts.isArrowFunction(first)) {
-              const params = collectParams(first);
               return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, [
-                transformLambda(first, params, context),
+                transformLambda(first, context),
                 ...rest,
               ]);
             }
@@ -41,8 +40,7 @@ export default function (program: ts.Program): ts.TransformerFactory<ts.SourceFi
           if (JOIN_METHODS.has(method) && node.arguments.length >= 3) {
             const onArg = node.arguments[2];
             if (onArg && ts.isArrowFunction(onArg)) {
-              const params = collectParams(onArg);
-              const newArgs = [node.arguments[0]!, node.arguments[1]!, transformLambda(onArg, params, context)];
+              const newArgs = [node.arguments[0]!, node.arguments[1]!, transformLambda(onArg, context)];
               return ts.factory.updateCallExpression(node, node.expression, node.typeArguments, newArgs);
             }
           }
@@ -62,24 +60,85 @@ function isQueryable(checker: ts.TypeChecker, node: ts.Expression): boolean {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function collectParams(fn: ts.ArrowFunction): Set<string> {
-  const names = new Set<string>();
-  for (const p of fn.parameters) {
-    if (ts.isIdentifier(p.name)) names.add(p.name.text);
-  }
-  return names;
+// Un paramètre destructuré (`{ age }`) est désucré en paramètre synthétique positionnel
+// (`$p0`) + accès propriété : l'identifiant libre `age` devient `$p0.age`. Tout l'aval
+// (translator, aliasMap, joinAliasMap) reste inchangé — il ne voit que des PropertyExpression.
+interface Binding {
+  param: string; // nom synthétique du paramètre, ex "$p0"
+  path: string[]; // chemin de propriétés, ex ["age"] ou ["company", "name"]
+}
+interface Scope {
+  params: Set<string>; // noms émis en NameExpression : params réels + synthétiques
+  bindings: Map<string, Binding>; // identifiant local destructuré → binding
 }
 
-function transformLambda(fn: ts.ArrowFunction, params: Set<string>, context: ts.TransformationContext): ts.Expression {
-  const args = fn.parameters.map((p) => obj("NameExpression", [prop("name", str((p.name as ts.Identifier).text))]));
-  const body = transformExpr(fn.body as ts.Expression, params, context);
+function buildScope(fn: ts.ArrowFunction): { argNames: string[]; scope: Scope } {
+  const params = new Set<string>();
+  const bindings = new Map<string, Binding>();
+  const argNames: string[] = [];
+  fn.parameters.forEach((p, i) => {
+    if (ts.isIdentifier(p.name)) {
+      params.add(p.name.text);
+      argNames.push(p.name.text);
+    } else if (ts.isObjectBindingPattern(p.name)) {
+      const synth = `$p${i}`;
+      params.add(synth);
+      argNames.push(synth);
+      collectBindings(p.name, synth, [], bindings);
+    } else {
+      throw new Error(`@lambdaql/compiler: unsupported parameter pattern ${ts.SyntaxKind[p.name.kind]}`);
+    }
+  });
+  return { argNames, scope: { params, bindings } };
+}
+
+function collectBindings(
+  pattern: ts.ObjectBindingPattern,
+  param: string,
+  prefix: string[],
+  out: Map<string, Binding>,
+): void {
+  for (const el of pattern.elements) {
+    if (el.dotDotDotToken) throw new Error("@lambdaql/compiler: rest element in destructuring is not supported");
+    if (el.initializer) throw new Error("@lambdaql/compiler: default values in destructuring are not supported");
+    const sourceKey = el.propertyName ? bindingPropName(el.propertyName) : (el.name as ts.Identifier).text;
+    const path = [...prefix, sourceKey];
+    if (ts.isObjectBindingPattern(el.name)) {
+      collectBindings(el.name, param, path, out);
+    } else if (ts.isIdentifier(el.name)) {
+      out.set(el.name.text, { param, path });
+    } else {
+      throw new Error("@lambdaql/compiler: unsupported binding element");
+    }
+  }
+}
+
+function bindingPropName(name: ts.PropertyName): string {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) return name.text;
+  throw new Error("@lambdaql/compiler: computed property names in destructuring are not supported");
+}
+
+function propertyChain(b: Binding): ts.Expression {
+  let expr: ts.Expression = obj("NameExpression", [prop("name", str(b.param))]);
+  for (const key of b.path) {
+    expr = obj("PropertyExpression", [prop("context", expr), prop("property", str(key))]);
+  }
+  return expr;
+}
+
+function transformLambda(fn: ts.ArrowFunction, context: ts.TransformationContext): ts.Expression {
+  const { argNames, scope } = buildScope(fn);
+  const args = argNames.map((n) => obj("NameExpression", [prop("name", str(n))]));
+  const body = transformExpr(fn.body as ts.Expression, scope, context);
   return obj("LambdaExpression", [prop("args", ts.factory.createArrayLiteralExpression(args)), prop("body", body)]);
 }
 
-function transformExpr(node: ts.Expression, params: Set<string>, context: ts.TransformationContext): ts.Expression {
+function transformExpr(node: ts.Expression, scope: Scope, context: ts.TransformationContext): ts.Expression {
   // Identifier
   if (ts.isIdentifier(node)) {
-    if (params.has(node.text) || GLOBAL_NAMES.has(node.text))
+    const binding = scope.bindings.get(node.text);
+    if (binding) return propertyChain(binding);
+    if (scope.params.has(node.text) || GLOBAL_NAMES.has(node.text))
       return obj("NameExpression", [prop("name", str(node.text))]);
     // Closure : identifiant externe — garder la référence vive, emballer en ConstantExpression
     return obj("ConstantExpression", [prop("value", node)]);
@@ -106,7 +165,7 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
   // Template literal avec interpolations : `hello ${x} world`
   if (ts.isTemplateExpression(node)) {
     const quasiExprs = [str(node.head.text), ...node.templateSpans.map((s) => str(s.literal.text))];
-    const valueExprs = node.templateSpans.map((s) => transformExpr(s.expression as ts.Expression, params, context));
+    const valueExprs = node.templateSpans.map((s) => transformExpr(s.expression as ts.Expression, scope, context));
     return obj("TemplateLiteralExpression", [
       prop("quasis", ts.factory.createArrayLiteralExpression(quasiExprs)),
       prop("expressions", ts.factory.createArrayLiteralExpression(valueExprs)),
@@ -117,8 +176,8 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
   if (ts.isBinaryExpression(node)) {
     return obj("BinaryExpression", [
       prop("operator", str(node.operatorToken.getText())),
-      prop("left", transformExpr(node.left, params, context)),
-      prop("right", transformExpr(node.right, params, context)),
+      prop("left", transformExpr(node.left, scope, context)),
+      prop("right", transformExpr(node.right, scope, context)),
     ]);
   }
 
@@ -128,24 +187,24 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
       node.operator === ts.SyntaxKind.ExclamationToken ? "!" : node.operator === ts.SyntaxKind.MinusToken ? "-" : "~";
     return obj("UnaryExpression", [
       prop("operator", str(op)),
-      prop("operand", transformExpr(node.operand, params, context)),
+      prop("operand", transformExpr(node.operand, scope, context)),
     ]);
   }
 
   // Conditional  (a ? b : c)
   if (ts.isConditionalExpression(node)) {
     return obj("ConditionalExpression", [
-      prop("condition", transformExpr(node.condition, params, context)),
-      prop("consequent", transformExpr(node.whenTrue, params, context)),
-      prop("alternate", transformExpr(node.whenFalse, params, context)),
+      prop("condition", transformExpr(node.condition, scope, context)),
+      prop("consequent", transformExpr(node.whenTrue, scope, context)),
+      prop("alternate", transformExpr(node.whenFalse, scope, context)),
     ]);
   }
 
   // Nullish (??)
   if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken) {
     return obj("NullishExpression", [
-      prop("left", transformExpr(node.left, params, context)),
-      prop("right", transformExpr(node.right, params, context)),
+      prop("left", transformExpr(node.left, scope, context)),
+      prop("right", transformExpr(node.right, scope, context)),
     ]);
   }
 
@@ -155,7 +214,7 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
       prop(
         "elements",
         ts.factory.createArrayLiteralExpression(
-          node.elements.map((e) => transformExpr(e as ts.Expression, params, context)),
+          node.elements.map((e) => transformExpr(e as ts.Expression, scope, context)),
         ),
       ),
     ]);
@@ -168,7 +227,7 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
       .map((p) =>
         obj("FieldExpression", [
           prop("name", str((p.name as ts.Identifier).text)),
-          prop("assignment", transformExpr(p.initializer as ts.Expression, params, context)),
+          prop("assignment", transformExpr(p.initializer as ts.Expression, scope, context)),
         ]),
       );
     return obj("ObjectLiteralExpression", [prop("fields", ts.factory.createArrayLiteralExpression(fields))]);
@@ -176,11 +235,11 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
 
   // Property / Method access  (u.name, u.email.includes('x'))
   if (ts.isPropertyAccessExpression(node) || ts.isCallExpression(node)) {
-    return transformAccess(node, params, context);
+    return transformAccess(node, scope, context);
   }
 
   // Parenthesised expression
-  if (ts.isParenthesizedExpression(node)) return transformExpr(node.expression, params, context);
+  if (ts.isParenthesizedExpression(node)) return transformExpr(node.expression, scope, context);
 
   // Fallback : laisser le nœud tel quel (ex : expressions non reconnues)
   throw new Error(`@lambdaql/compiler: unsupported expression kind ${ts.SyntaxKind[node.kind]}`);
@@ -188,14 +247,14 @@ function transformExpr(node: ts.Expression, params: Set<string>, context: ts.Tra
 
 function transformAccess(
   node: ts.PropertyAccessExpression | ts.CallExpression,
-  params: Set<string>,
+  scope: Scope,
   context: ts.TransformationContext,
 ): ts.Expression {
   // Method call : context.method(args)
   if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-    const ctx = transformExpr(node.expression.expression as ts.Expression, params, context);
+    const ctx = transformExpr(node.expression.expression as ts.Expression, scope, context);
     const method = node.expression.name.text;
-    const args = node.arguments.map((a) => transformExpr(a as ts.Expression, params, context));
+    const args = node.arguments.map((a) => transformExpr(a as ts.Expression, scope, context));
     return obj("MethodExpression", [
       prop("context", ctx),
       prop("method", str(method)),
@@ -204,7 +263,7 @@ function transformAccess(
   }
   // Property access : context.property
   if (ts.isPropertyAccessExpression(node)) {
-    const ctx = transformExpr(node.expression, params, context);
+    const ctx = transformExpr(node.expression, scope, context);
     return obj("PropertyExpression", [prop("context", ctx), prop("property", str(node.name.text))]);
   }
   throw new Error(`@lambdaql/compiler: unexpected access node`);

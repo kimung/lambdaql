@@ -251,7 +251,7 @@ function subqueryToMikroOrm(
   };
 }
 
-// ── Traduction de l'AST gamn9 → SQL string avec ? (format MikroORM QB) ────────
+// ── Traduction de l'AST lambdaql → SQL string avec ? (format MikroORM QB) ────────
 
 const SQL_OPS: Record<string, string> = {
   "&&": "AND",

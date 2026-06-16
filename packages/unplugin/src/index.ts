@@ -4,7 +4,7 @@ import { transform } from "./transform.js";
 const INCLUDE = /\.[cm]?[jt]sx?$/;
 
 const plugin = createUnplugin(() => ({
-  name: "gamn9",
+  name: "lambdaql",
   transformInclude(id: string) {
     return INCLUDE.test(id);
   },

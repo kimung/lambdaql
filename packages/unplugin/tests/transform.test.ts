@@ -142,6 +142,51 @@ q.join("p", p, (u, p) => u.id === p.userId);`);
   });
 });
 
+describe("transform — destructuration d'objet", () => {
+  it("désucre ({ age }) => age > 18 en $p0.age", () => {
+    const code = makeFile(`const q = from("user");\nq.filter(({ age }) => age > 18);`);
+    const ast: any = extractArg(code);
+    expect(ast.args[0].name).toBe("$p0");
+    expect(ast.body.left.kind).toBe("PropertyExpression");
+    expect(ast.body.left.context.name).toBe("$p0");
+    expect(ast.body.left.property).toBe("age");
+  });
+
+  it("gère le renommage ({ age: a }) => a > 18", () => {
+    const code = makeFile(`const q = from("user");\nq.filter(({ age: a }) => a > 18);`);
+    const ast: any = extractArg(code);
+    expect(ast.body.left.property).toBe("age");
+  });
+
+  it("gère la destructuration imbriquée ({ company: { name } })", () => {
+    const code = makeFile(`const q = from("user");\nq.filter(({ company: { name } }) => name === "x");`);
+    const ast: any = extractArg(code);
+    const left = ast.body.left;
+    expect(left.property).toBe("name");
+    expect(left.context.property).toBe("company");
+    expect(left.context.context.name).toBe("$p0");
+  });
+
+  it("gère un mix param simple + destructuré dans un join", () => {
+    const code = makeFile(`
+const q = from("user");
+const p = from("post");
+q.join("p", p, (u, { userId }) => u.id === userId);`);
+    const result = transform(code, "test.ts");
+    expect(result!.code).toMatch(/"\$p1"/);
+  });
+
+  it("rejette les valeurs par défaut", () => {
+    const code = makeFile(`const q = from("user");\nq.filter(({ age = 18 }) => age > 0);`);
+    expect(() => transform(code, "test.ts")).toThrow(/default values/);
+  });
+
+  it("rejette le rest element", () => {
+    const code = makeFile(`const q = from("user");\nq.filter(({ age, ...rest }) => age > 0);`);
+    expect(() => transform(code, "test.ts")).toThrow(/rest element/);
+  });
+});
+
 describe("transform — non-régression (faux positifs)", () => {
   it("retourne null si pas d'import @lambdaql/data", () => {
     const result = transform(`const arr = [1,2,3];\narr.filter(x => x > 0);`, "test.ts");

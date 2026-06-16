@@ -53,3 +53,17 @@ from<User>("user").filter((u) => ids.includes(u.id));
 ```
 
 Without the AOT compiler, closure arrays must be inlined as literal arrays in the lambda.
+
+## Destructured parameters
+
+Object destructuring in lambda parameters is supported **only** through this transformer (and `@lambdaql/unplugin`). It is desugared to a synthetic parameter plus property access, so the generated SQL is identical to the plain form:
+
+```ts
+from<User>("user").filter(({ age, name }) => age > 18 && name === "Kim");
+// → WHERE age > $1 AND name = $2
+
+from<User>("user").filter(({ company: { name } }) => name === "ACME"); // nested → navigates company
+from<User>("user").filter(({ age: minAge }) => minAge > 18); // renamed → age column
+```
+
+Default values (`{ age = 18 }`) and rest elements (`{ ...rest }`) throw at compile time. Without the AOT compiler, destructured parameters throw at runtime — use plain parameters instead.

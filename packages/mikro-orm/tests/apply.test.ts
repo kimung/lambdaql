@@ -500,7 +500,7 @@ describe("applyQueryable — erreurs", () => {
     expect(() => applyQueryable(qb, q)).toThrow("@lambdaql/mikro-orm");
   });
 
-  it("ignore les joins gamn9 sans erreur", () => {
+  it("ignore les joins lambdaql sans erreur", () => {
     const qb = mockQb();
     const q = from<User>("u").join("other", from<User>("other"), (a, b) => a.id === b.id);
     expect(() => applyQueryable(qb, q)).not.toThrow();

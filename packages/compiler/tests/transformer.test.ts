@@ -141,6 +141,58 @@ describe("Transformer — méthodes multi-params (join)", () => {
   });
 });
 
+describe("Transformer — destructuration d'objet", () => {
+  it("désucre ({ age }) => age > 18 en $p0.age", () => {
+    const ast = extractArg(`q.filter(({ age }) => age > 18)`);
+    expect(ast.args).toHaveLength(1);
+    expect(ast.args[0].name).toBe("$p0");
+    expect(ast.body.kind).toBe("BinaryExpression");
+    expect(ast.body.left.kind).toBe("PropertyExpression");
+    expect(ast.body.left.context.kind).toBe("NameExpression");
+    expect(ast.body.left.context.name).toBe("$p0");
+    expect(ast.body.left.property).toBe("age");
+  });
+
+  it("gère plusieurs bindings ({ age, name })", () => {
+    const ast = extractArg(`q.filter(({ age, name }) => age > 18 && name === 'Kim')`);
+    expect(ast.body.left.left.property).toBe("age");
+    expect(ast.body.right.left.property).toBe("name");
+    expect(ast.body.right.left.context.name).toBe("$p0");
+  });
+
+  it("gère le renommage ({ age: a }) => a > 18", () => {
+    const ast = extractArg(`q.filter(({ age: a }) => a > 18)`);
+    expect(ast.body.left.kind).toBe("PropertyExpression");
+    expect(ast.body.left.property).toBe("age");
+  });
+
+  it("gère la destructuration imbriquée ({ company: { name } })", () => {
+    const ast = extractArg(`q.filter(({ company: { name } }) => name === 'x')`);
+    // name → $p0.company.name
+    const left = ast.body.left;
+    expect(left.kind).toBe("PropertyExpression");
+    expect(left.property).toBe("name");
+    expect(left.context.kind).toBe("PropertyExpression");
+    expect(left.context.property).toBe("company");
+    expect(left.context.context.name).toBe("$p0");
+  });
+
+  it("gère un mix param simple + destructuré dans un join", () => {
+    const js = compileSource(`q.join("p", other, (u, { userId }) => u.id === userId)`);
+    expect(js).toMatch(/LambdaExpression/);
+    // arg 0 = u, arg 1 = $p1 ; userId → $p1.userId
+    expect(js).toMatch(/"\$p1"/);
+  });
+
+  it("rejette les valeurs par défaut", () => {
+    expect(() => compileSource(`q.filter(({ age = 18 }) => age > 0)`)).toThrow(/default values/);
+  });
+
+  it("rejette le rest element", () => {
+    expect(() => compileSource(`q.filter(({ age, ...rest }) => age > 0)`)).toThrow(/rest element/);
+  });
+});
+
 describe("Transformer — non-régression (faux positifs)", () => {
   it("ne transforme pas .filter() sur un tableau (non-Queryable)", () => {
     // `any` → getSymbol() renvoie undefined → isQueryable() = false

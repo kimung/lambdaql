@@ -57,7 +57,7 @@ module.exports = {
 
 The plugin transforms every `.js`, `.ts`, `.jsx`, `.tsx`, `.mjs`, `.cjs` file. For each lambda passed to a LambdaQL method (`filter`, `select`, `orderBy`, etc.), it replaces the arrow function with the equivalent `@lambdaql/expression` AST object inline.
 
-This is equivalent to the [ts-patch transformer](/guide/aot-compiler#ts-patch) but works with any bundler — no TypeScript compiler patching required.
+This is equivalent to the [ts-patch transformer](/guide/aot-compiler#ts-patch) but works with any bundler — no TypeScript compiler patching required. It enables the same AOT-only features: [closure capture](/guide/aot-compiler#closure-capture) and [destructured parameters](/guide/aot-compiler#destructured-parameters).
 
 ## When to use which
 

@@ -30,6 +30,10 @@ db.from<User>("users")
 
 Supported operators: `===`, `!==`, `==`, `!=`, `>`, `>=`, `<`, `<=`, `&&`, `||`, `!`, `??`.
 
+::: tip Parameter forms
+Plain parameters (`(u) => u.age > 18`) work in every mode. Closure capture and **object destructuring** (`({ age }) => age > 18`) require the [AOT compiler](/guide/aot-compiler#destructured-parameters) — at runtime they throw with a message pointing to it.
+:::
+
 **Null checks:**
 
 ```ts

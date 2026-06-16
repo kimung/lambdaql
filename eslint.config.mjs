@@ -4,7 +4,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/*.d.ts", "test_precedence.mjs", "examples/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/*.d.ts", "test_precedence.mjs", "examples/**", "docs/.vitepress/**"],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
