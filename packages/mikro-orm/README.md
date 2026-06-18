@@ -1,5 +1,7 @@
 # @lambdaql/mikro-orm
 
+> **Experimental** — proof of concept. API may change; UNION and CTE are not supported. Requires a SQL driver that exposes `createQueryBuilder` (`@mikro-orm/better-sqlite`, `@mikro-orm/postgresql`, etc.).
+
 [MikroORM](https://mikro-orm.io/) QueryBuilder integration for [@lambdaql/data](../data).
 
 ## Installation

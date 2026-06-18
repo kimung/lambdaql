@@ -1,5 +1,9 @@
 # MikroORM
 
+::: warning Experimental
+This integration is a proof of concept. The API may change, some features are not supported (UNION, CTE, `orderByRaw`), and it requires a SQL driver that provides `createQueryBuilder` (e.g. `@mikro-orm/better-sqlite`, `@mikro-orm/postgresql`). For stable production use, consider using `applyQueryable` directly with a QueryBuilder you create and manage yourself.
+:::
+
 `@lambdaql/mikro-orm` integrates `Queryable<T>` with the MikroORM `QueryBuilder`.
 
 ## Install
