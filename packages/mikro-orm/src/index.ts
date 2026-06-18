@@ -11,8 +11,9 @@ import type {
   NullishExpression,
   ArrayLiteralExpression,
 } from "@lambdaql/expression";
-import { identityNaming, SqlTranslator, mysql, type NamingStrategy, type Queryable } from "@lambdaql/data";
+import { from, identityNaming, SqlTranslator, mysql, type NamingStrategy, type Queryable } from "@lambdaql/data";
 import type { SelectExpression, SubqueryCondition } from "@lambdaql/data";
+import { EntityRepository } from "@mikro-orm/core";
 import type { MikroORM, EntityManager, EntityName } from "@mikro-orm/core";
 
 interface IQueryBuilder {
@@ -463,5 +464,50 @@ class MikroOrmConditionBuilder {
     return String((arg as ConstantExpression).value)
       .replace(/%/g, "\\%")
       .replace(/_/g, "\\_");
+  }
+}
+
+// ── LambdaRepository ─────────────────────────────────────────────────────────
+
+/**
+ * Abstract base repository that integrates LambdaQL with MikroORM.
+ * Extend it instead of `EntityRepository<T>` to get `findWhere` and a
+ * pre-configured `queryable` without any boilerplate.
+ *
+ * Naming and `@Property({ fieldName })` annotations are resolved automatically
+ * from MikroORM metadata — no manual `naming` option needed.
+ *
+ * @example
+ * ```ts
+ * @Repository(User)
+ * export class UserRepository extends LambdaRepository<User> {}
+ *
+ * // Usage:
+ * const adults = await userRepo.findWhere(u => u.age >= 18);
+ * const page   = await userRepo.findWhere(
+ *   u => u.active === true,
+ *   q => q.orderBy(u => u.name).skip(20).take(10)
+ * );
+ * ```
+ */
+export abstract class LambdaRepository<T extends object> extends EntityRepository<T> {
+  /** Base `Queryable<T>` for this entity — table name derived from MikroORM metadata. */
+  protected get queryable(): Queryable<T> {
+    const meta = this.em.getMetadata().get(this.entityName as any);
+    return from<T>(meta.tableName ?? (this.entityName as string));
+  }
+
+  /**
+   * Returns all entities matching `predicate`.
+   * Pass an optional `build` callback to add ordering, pagination, etc.
+   */
+  async findWhere(predicate: (u: T) => boolean, build?: (q: Queryable<T>) => Queryable<T>): Promise<T[]> {
+    let q = this.queryable.filter(predicate as any);
+    if (build) q = build(q);
+    // createQueryBuilder is available on SQL drivers (@mikro-orm/knex) — cast needed
+    // because @mikro-orm/core's EntityManager base type doesn't declare it.
+    const qb = (this.em as any).createQueryBuilder(this.entityName, "t0");
+    applyQueryable(qb, q, { em: this.em, entity: this.entityName });
+    return qb.getResultList();
   }
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { from } from "@lambdaql/data";
 import { snakeCaseNaming } from "@lambdaql/data";
-import { applyQueryable, createNamingFromMikroOrm } from "../src/index.js";
+import { applyQueryable, createNamingFromMikroOrm, LambdaRepository } from "../src/index.js";
 
 type User = { id: number; name: string; age: number; active: boolean; email: string; createdAt: string | null };
 type CamelUser = { firstName: string; lastName: string; isActive: boolean; createdAt: string | null };
@@ -490,6 +490,72 @@ describe("createNamingFromMikroOrm", () => {
     const naming = createNamingFromMikroOrm(orm, entityMeta);
     expect(naming("firstName")).toBe("prenom"); // override
     expect(naming("isActive")).toBe("is_active"); // NamingStrategy
+  });
+});
+
+describe("LambdaRepository", () => {
+  type SimpleUser = { id: number; age: number; active: boolean };
+
+  function mockEmForRepo(tableName = "users") {
+    const qb = {
+      alias: "t0",
+      andWhere: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      groupBy: vi.fn().mockReturnThis(),
+      having: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
+      offset: vi.fn().mockReturnThis(),
+      join: vi.fn().mockReturnThis(),
+      leftJoin: vi.fn().mockReturnThis(),
+      getResultList: vi.fn().mockResolvedValue([]),
+    };
+    const em = {
+      getMetadata: () => ({ get: () => ({ tableName, props: {} }) }),
+      config: { getNamingStrategy: () => ({ propertyToColumnName: (p: string) => p }) },
+      getOrm: () => ({ config: { getNamingStrategy: () => ({ propertyToColumnName: (p: string) => p }) } }),
+      createQueryBuilder: vi.fn().mockReturnValue(qb),
+    } as any;
+    return { em, qb };
+  }
+
+  it("findWhere applique le prédicat via applyQueryable", async () => {
+    const { em, qb } = mockEmForRepo();
+
+    class UserRepo extends LambdaRepository<SimpleUser> {}
+    const repo = new (UserRepo as any)(em, "SimpleUser");
+
+    await repo.findWhere((u: SimpleUser) => u.age > 18);
+
+    expect(em.createQueryBuilder).toHaveBeenCalledWith("SimpleUser", "t0");
+    expect(qb.andWhere).toHaveBeenCalledWith("(t0.age > ?)", [18]);
+    expect(qb.getResultList).toHaveBeenCalled();
+  });
+
+  it("findWhere avec build callback ajoute limit/offset", async () => {
+    const { em, qb } = mockEmForRepo();
+
+    class UserRepo extends LambdaRepository<SimpleUser> {}
+    const repo = new (UserRepo as any)(em, "SimpleUser");
+
+    await repo.findWhere(
+      (u: SimpleUser) => u.active === true,
+      (q: any) => q.skip(10).take(5),
+    );
+
+    expect(qb.offset).toHaveBeenCalledWith(10);
+    expect(qb.limit).toHaveBeenCalledWith(5);
+  });
+
+  it("queryable dérive le nom de table depuis les métadonnées", async () => {
+    const { em, qb } = mockEmForRepo("my_users");
+
+    class UserRepo extends LambdaRepository<SimpleUser> {}
+    const repo = new (UserRepo as any)(em, "SimpleUser");
+
+    await repo.findWhere((u: SimpleUser) => u.age > 0);
+
+    // andWhere doit référencer l'alias t0, pas le nom de table — la table est résolue correctement
+    expect(qb.andWhere).toHaveBeenCalledWith("(t0.age > ?)", [0]);
   });
 });
 
